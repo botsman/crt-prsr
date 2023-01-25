@@ -16,3 +16,7 @@
 
 # Idea files
 .idea/*
+
+# Local files used for testing
+# Those are also stored in github secrets
+**/testdata/private/*
