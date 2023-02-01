@@ -1,6 +1,7 @@
 package crt
 
 import (
+	"os"
 	"testing"
 )
 
@@ -37,6 +38,19 @@ juDEI/9bfU1lcKwrmz3O2+BtjjKAvpafkmO8l7tdufThcV4q5O8DIrGKZTqPwJNl
 1IXNDw9bg1kWRxYtnCQ6yICmJhSFm/Y3m6xv+cXDBlHz4n/FsRC6UfTd
 -----END CERTIFICATE-----
 `
+
+func getSecretPublicCert() []byte {
+	ci := os.Getenv("CI")
+	if ci == "true" {
+		// TODO: get the cert from a secret
+		return []byte{}
+	}
+	content, err := os.ReadFile("testdata/private/qwac.pem")
+	if err != nil {
+		panic(err)
+	}
+	return content
+}
 
 func TestLoadCertFromPath(t *testing.T) {
 	cert, err := LoadCertFromPath("testdata/gts1c3.pem")
@@ -92,5 +106,27 @@ func TestCertificate_GetIssuer(t *testing.T) {
 	}
 	if issuer.CommonName != "GTS Root R1" {
 		t.Fatalf("Unexpected common name: %s", issuer.CommonName)
+	}
+}
+
+func TestCertificate_GetExtensions(t *testing.T) {
+	certContent := getSecretPublicCert()
+	cert, err := LoadCertFromString(string(certContent))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cert.GetExtensions()
+}
+
+func TestCertificate_GetParentLink(t *testing.T) {
+	certContent := getSecretPublicCert()
+	cert, err := LoadCertFromString(string(certContent))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parentLinks := cert.GetParentLinks()
+	parentLink := parentLinks[0]
+	if parentLink != "http://qtlsca2018-ca1.e-szigno.hu/qtlsca2018.crt" {
+		t.Fatalf("Unexpected parent link: %s", parentLink)
 	}
 }

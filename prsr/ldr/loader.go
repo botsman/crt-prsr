@@ -57,3 +57,32 @@ func (l *CertificateLoader) IsTrusted(cert crt.Certificate) bool {
 	_, ok := l.trustedHashes[cert.GetSha256()]
 	return ok
 }
+
+func loadParentCertificate(c *crt.Certificate) (*crt.Certificate, error) {
+	for _, url := range c.GetParentLinks() {
+		cert, err := crt.LoadCertFromUri(url)
+		// Here we should probably try each link until we find one that works
+		// Perhaps do that concurrently
+		if err != nil {
+			log.Printf("Failed to load crt from uri %s: %s", url, err)
+			continue
+		}
+		return cert, nil
+	}
+	return nil, nil
+}
+
+func loadRootCertificate(c *crt.Certificate) (*crt.Certificate, error) {
+	if c.IsRoot() {
+		return c, nil
+	}
+	for parent, err := loadParentCertificate(c); parent != nil; parent, err = loadParentCertificate(c) {
+		if err != nil {
+			return nil, err
+		}
+		if parent.IsRoot() {
+			return parent, nil
+		}
+	}
+	return nil, nil
+}

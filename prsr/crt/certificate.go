@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
@@ -125,6 +126,8 @@ func (c *Certificate) GetKeyUsage() string {
 func (c *Certificate) GetExtensions() []string {
 	var extensions []string
 	for _, extension := range c.x509Cert.Extensions {
+		//	Perhaps there is a better way to get the value of the extension
+		fmt.Println(string(extension.Value))
 		extensions = append(extensions, extension.Id.String())
 	}
 	for _, extension := range c.x509Cert.ExtraExtensions {
@@ -134,4 +137,37 @@ func (c *Certificate) GetExtensions() []string {
 		extensions = append(extensions, extension.String())
 	}
 	return extensions
+}
+
+func (c *Certificate) GetParentLinks() []string {
+	return c.x509Cert.IssuingCertificateURL
+}
+
+func (c *Certificate) GetCrlLink() string {
+	// There is also an extension "Freshest CRL / Delta CRL Distribution Point".
+	// I think that we should parse it here as well
+	for _, url := range c.x509Cert.CRLDistributionPoints {
+		return url
+	}
+	return ""
+}
+
+// TODO: move this function to a plugin
+func (c *Certificate) GetCertificateScopes() []string {
+	// 1.3.6.1.5.5.7.1.3 - qcStatements
+	//account servicing (PSP_AS);
+	//payment initiation (PSP_PI);
+	//account information (PSP_AI);
+	//issuing of card-based payment instruments (PSP_IC).
+	var scopes []string
+	for _, extension := range c.x509Cert.Extensions {
+		if extension.Id.Equal(asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 1, 3}) {
+			scopes = append(scopes, string(extension.Value))
+		}
+	}
+	return []string{"", ""}
+}
+
+func (c *Certificate) IsRoot() bool {
+	return c.x509Cert.IsCA
 }
