@@ -40,10 +40,8 @@ juDEI/9bfU1lcKwrmz3O2+BtjjKAvpafkmO8l7tdufThcV4q5O8DIrGKZTqPwJNl
 `
 
 func getSecretPublicCert() []byte {
-	ci := os.Getenv("CI")
-	if ci == "true" {
-		// TODO: get the cert from a secret
-		return []byte{}
+	if os.Getenv("CI") == "true" {
+		return []byte(os.Getenv("SECRET_PUBLIC_CERT"))
 	}
 	content, err := os.ReadFile("testdata/private/qwac.pem")
 	if err != nil {
