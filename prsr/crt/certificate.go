@@ -127,7 +127,6 @@ func (c *Certificate) GetExtensions() []string {
 	var extensions []string
 	for _, extension := range c.x509Cert.Extensions {
 		//	Perhaps there is a better way to get the value of the extension
-		fmt.Println(string(extension.Value))
 		extensions = append(extensions, extension.Id.String())
 	}
 	for _, extension := range c.x509Cert.ExtraExtensions {
