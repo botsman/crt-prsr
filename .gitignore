@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+*.key
 
 # Test binary, built with `go test -c`
 *.test
@@ -17,6 +18,3 @@
 # Idea files
 .idea/*
 
-# Local files used for testing
-# Those are also stored in github secrets
-**/testdata/private/*

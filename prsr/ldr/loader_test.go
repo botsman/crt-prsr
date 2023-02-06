@@ -1,6 +1,9 @@
-package crt
+package ldr
 
-import "testing"
+import (
+	"github.com/botsman/crt-prsr/prsr/crt"
+	"testing"
+)
 
 const certString = `-----BEGIN CERTIFICATE-----
 MIIJvzCCCKegAwIBAgINfFpB/JRgotxghHiHCjANBgkqhkiG9w0BAQsFADBqMQsw
@@ -59,79 +62,69 @@ mOaW
 -----END CERTIFICATE-----
 `
 
-func TestLoadCertFromPath(t *testing.T) {
-	cert, err := LoadCertFromPath("../testdata/qwac.crt")
+func TestNewCertificateLoader(t *testing.T) {
+	var certs []crt.Id
+	NewCertificateLoader(certs)
+}
+
+func TestCertificateLoader_Load(t *testing.T) {
+	certs := []crt.Id{
+		{
+			Val:    "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565",
+			IdType: crt.Sha256,
+		},
+	}
+	loader := NewCertificateLoader(certs)
+	loader.Load()
+}
+func TestCertificateLoader_IsTrusted(t *testing.T) {
+	certs := []crt.Id{
+		{
+			Val:    "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565",
+			IdType: crt.Sha256,
+		},
+	}
+	loader := NewCertificateLoader(certs)
+	loader.Load()
+	cert, err := crt.LoadCertFromString(certString)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cert.GetSha256() != "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565" {
-		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
+	if !loader.IsTrusted(cert) {
+		t.Fatal("should be trusted")
 	}
 }
 
-func TestLoadCertFromUri(t *testing.T) {
-	cert, err := LoadCertFromUri("https://pki.goog/repo/certs/gts1c3.der")
+func Test_loadParentCertificate(t *testing.T) {
+	cert, err := crt.LoadCertFromString(certString)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cert.GetSha256() != "23ecb03eec17338c4e33a6b48a41dc3cda12281bbc3ff813c0589d6cc2387522" {
-		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
-	}
-}
-
-func TestLoadCertFromString(t *testing.T) {
-	cert, err := LoadCertFromString(certString)
+	parent, err := loadParentCertificate(cert)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cert.GetSha256() != "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565" {
-		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
+	if parent == nil {
+		t.Fatal("parent should not be nil")
+	}
+	if parent.GetSha256() != "07f6606a521ad4e8d463c4e5656382e2baa110b9a753c27b5497bf9875d7c0e5" {
+		t.Fatalf("Unexpected sha256: %s", parent.GetSha256())
 	}
 }
 
-func TestLoadCertFromUriWithInvalidUri(t *testing.T) {
-	_, err := LoadCertFromUri("https://pki.goog/repo/certs/gts1c3.der/")
-	if err == nil {
-		t.Fatal("Expected error")
-	}
-}
-
-func TestCertificate_GetIssuer(t *testing.T) {
-	cert, err := LoadCertFromString(certString)
+func Test_loadRootCertificate(t *testing.T) {
+	cert, err := crt.LoadCertFromString(certString)
 	if err != nil {
 		t.Fatal(err)
 	}
-	issuer := cert.GetIssuer()
-	if issuer.String() != "CN=e-Szigno Test CA3,OU=e-Szigno CA,O=Microsec Ltd.,L=Budapest,C=HU" {
-		t.Fatalf("Unexpected issuer: %s", cert.GetIssuer())
-	}
-	if issuer.Country[0] != "HU" {
-		t.Fatalf("Unexpected country: %s", issuer.Country)
-	}
-	if issuer.Organization[0] != "Microsec Ltd." {
-		t.Fatalf("Unexpected organization: %s", issuer.Organization[0])
-	}
-	if issuer.CommonName != "e-Szigno Test CA3" {
-		t.Fatalf("Unexpected common name: %s", issuer.CommonName)
-	}
-}
-
-func TestCertificate_GetExtensions(t *testing.T) {
-	cert, err := LoadCertFromString(certString)
+	root, err := loadRootCertificate(cert)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cert.GetExtensions()
-}
-
-func TestCertificate_GetParentLink(t *testing.T) {
-	cert, err := LoadCertFromString(certString)
-	if err != nil {
-		t.Fatal(err)
+	if root == nil {
+		t.Fatal("root should not be nil")
 	}
-	parentLinks := cert.GetParentLinks()
-	parentLink := parentLinks[0]
-	if parentLink != "http://teszt.e-szigno.hu/TCA3.crt" {
-		t.Fatalf("Unexpected parent link: %s", parentLink)
+	if root.GetSha256() != "d42df70b62f315415ceb8791638a563966d69078c127204832b2f4fabeaf2830" {
+		t.Fatalf("Unexpected sha256: %s", root.GetSha256())
 	}
 }
