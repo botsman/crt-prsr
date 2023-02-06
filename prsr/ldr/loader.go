@@ -74,13 +74,23 @@ func loadParentCertificate(c *crt.Certificate) (*crt.Certificate, error) {
 }
 
 func loadRootCertificate(c *crt.Certificate) (*crt.Certificate, error) {
-	for parent, err := loadParentCertificate(c); parent != nil; parent, err = loadParentCertificate(c) {
+	previous := c
+	var parent *crt.Certificate
+	var err error
+	for {
+		parent, err = loadParentCertificate(previous)
 		if err != nil {
 			return nil, err
 		}
-		if parent.IsRoot() {
+		if parent == nil {
+			return previous, nil
+		}
+		if parent.GetParentLinks()[0] == previous.GetParentLinks()[0] {
 			return parent, nil
 		}
+		//if parent.GetSha256() == previous.GetSha256() {
+		//	return previous, nil
+		//}
+		previous = parent
 	}
-	return nil, nil
 }
