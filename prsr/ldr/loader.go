@@ -22,6 +22,7 @@ func (l *CertificateLoader) Load() {
 	if l.loaded {
 		return
 	}
+	l.trustedHashes = make(map[string]struct{})
 	// TODO: load every crt in a goroutine
 	for _, cId := range l.trustedCertificates {
 		if cId.IdType == crt.Sha256 {
@@ -50,7 +51,7 @@ func (l *CertificateLoader) Load() {
 	l.loaded = true
 }
 
-func (l *CertificateLoader) IsTrusted(cert crt.Certificate) bool {
+func (l *CertificateLoader) IsTrusted(cert *crt.Certificate) bool {
 	if !l.loaded {
 		l.Load()
 	}
@@ -73,9 +74,6 @@ func loadParentCertificate(c *crt.Certificate) (*crt.Certificate, error) {
 }
 
 func loadRootCertificate(c *crt.Certificate) (*crt.Certificate, error) {
-	if c.IsRoot() {
-		return c, nil
-	}
 	for parent, err := loadParentCertificate(c); parent != nil; parent, err = loadParentCertificate(c) {
 		if err != nil {
 			return nil, err
