@@ -21,6 +21,4 @@ jobs:
         run: go build -v ./...
 
       - name: Test
-        env:
-          SECRET_PUBLIC_CERT: ${{ secrets.QWAC_PEM }}
         run: go test -v ./...

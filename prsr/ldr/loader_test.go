@@ -63,8 +63,7 @@ mOaW
 `
 
 func TestNewCertificateLoader(t *testing.T) {
-	var certs []crt.Id
-	NewCertificateLoader(certs)
+	NewCertificateLoader()
 }
 
 func TestCertificateLoader_Load(t *testing.T) {
@@ -74,25 +73,8 @@ func TestCertificateLoader_Load(t *testing.T) {
 			IdType: crt.Sha256,
 		},
 	}
-	loader := NewCertificateLoader(certs)
-	loader.Load()
-}
-func TestCertificateLoader_IsTrusted(t *testing.T) {
-	certs := []crt.Id{
-		{
-			Val:    "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565",
-			IdType: crt.Sha256,
-		},
-	}
-	loader := NewCertificateLoader(certs)
-	loader.Load()
-	cert, err := crt.LoadCertFromString(certString)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !loader.IsTrusted(cert) {
-		t.Fatal("should be trusted")
-	}
+	loader := NewCertificateLoader()
+	loader.Load(certs)
 }
 
 func Test_loadParentCertificate(t *testing.T) {
