@@ -6,27 +6,18 @@ import (
 )
 
 type CertificateLoader struct {
-	trustedCertificates []crt.Id
-	loaded              bool
-	trustedHashes       map[string]struct{}
 }
 
-func NewCertificateLoader(certs []crt.Id) *CertificateLoader {
-	certLoader := &CertificateLoader{
-		trustedCertificates: certs,
-	}
-	return certLoader
+func NewCertificateLoader() *CertificateLoader {
+	return &CertificateLoader{}
 }
 
-func (l *CertificateLoader) Load() {
-	if l.loaded {
-		return
-	}
-	l.trustedHashes = make(map[string]struct{})
+func (l *CertificateLoader) Load(trustedCertificates []crt.Id) map[string]struct{} {
+	trustedHashes := make(map[string]struct{})
 	// TODO: load every crt in a goroutine
-	for _, cId := range l.trustedCertificates {
+	for _, cId := range trustedCertificates {
 		if cId.IdType == crt.Sha256 {
-			l.trustedHashes[cId.Val] = struct{}{}
+			trustedHashes[cId.Val] = struct{}{}
 			continue
 		}
 		if cId.IdType == crt.Uri {
@@ -35,7 +26,7 @@ func (l *CertificateLoader) Load() {
 				log.Printf("Failed to load crt from uri %s: %s", cId.Val, err)
 				continue
 			}
-			l.trustedHashes[cert.GetSha256()] = struct{}{}
+			trustedHashes[cert.GetSha256()] = struct{}{}
 			continue
 		}
 		if cId.IdType == crt.Path {
@@ -44,19 +35,11 @@ func (l *CertificateLoader) Load() {
 				log.Printf("Failed to load crt from path %s: %s", cId.Val, err)
 				continue
 			}
-			l.trustedHashes[cert.GetSha256()] = struct{}{}
+			trustedHashes[cert.GetSha256()] = struct{}{}
 			continue
 		}
 	}
-	l.loaded = true
-}
-
-func (l *CertificateLoader) IsTrusted(cert *crt.Certificate) bool {
-	if !l.loaded {
-		l.Load()
-	}
-	_, ok := l.trustedHashes[cert.GetSha256()]
-	return ok
+	return trustedHashes
 }
 
 func loadParentCertificate(c *crt.Certificate) (*crt.Certificate, error) {
@@ -88,9 +71,6 @@ func loadRootCertificate(c *crt.Certificate) (*crt.Certificate, error) {
 		if parent.GetParentLinks()[0] == previous.GetParentLinks()[0] {
 			return parent, nil
 		}
-		//if parent.GetSha256() == previous.GetSha256() {
-		//	return previous, nil
-		//}
 		previous = parent
 	}
 }
