@@ -42,7 +42,7 @@ func (l *CertificateLoader) Load(trustedCertificates []crt.Id) map[string]struct
 	return trustedHashes
 }
 
-func loadParentCertificate(c *crt.Certificate) (*crt.Certificate, error) {
+func LoadParentCertificate(c *crt.Certificate) (*crt.Certificate, error) {
 	for _, url := range c.GetParentLinks() {
 		cert, err := crt.LoadCertFromUri(url)
 		// Here we should probably try each link until we find one that works
@@ -56,19 +56,19 @@ func loadParentCertificate(c *crt.Certificate) (*crt.Certificate, error) {
 	return nil, nil
 }
 
-func loadRootCertificate(c *crt.Certificate) (*crt.Certificate, error) {
+func LoadRootCertificate(c *crt.Certificate) (*crt.Certificate, error) {
 	previous := c
 	var parent *crt.Certificate
 	var err error
 	for {
-		parent, err = loadParentCertificate(previous)
+		parent, err = LoadParentCertificate(previous)
 		if err != nil {
 			return nil, err
 		}
 		if parent == nil {
 			return previous, nil
 		}
-		if parent.GetParentLinks()[0] == previous.GetParentLinks()[0] {
+		if parent.IsRoot() {
 			return parent, nil
 		}
 		previous = parent
