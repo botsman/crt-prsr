@@ -30,14 +30,15 @@ type Id struct {
 
 type Certificate struct {
 	x509Cert *x509.Certificate
+	link     string // self link to crt (if any)
 }
 
-func NewCertificate(content []byte) (*Certificate, error) {
+func NewCertificate(content []byte, uri string) (*Certificate, error) {
 	x509Cert, err := x509.ParseCertificate(content)
 	if err != nil {
 		return nil, err
 	}
-	return &Certificate{x509Cert}, nil
+	return &Certificate{x509Cert, uri}, nil
 }
 
 func LoadCertFromPath(path string) (*Certificate, error) {
@@ -58,7 +59,7 @@ func LoadCertFromUri(uri string) (*Certificate, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewCertificate(content)
+	return NewCertificate(content, uri)
 }
 
 func LoadCertFromString(content string) (*Certificate, error) {
@@ -69,7 +70,7 @@ func LoadCertFromString(content string) (*Certificate, error) {
 	if certDERBlock.Type != "CERTIFICATE" {
 		return nil, errors.New(fmt.Sprintf("Only public certificates supported. Got: %s", certDERBlock.Type))
 	}
-	return NewCertificate(certDERBlock.Bytes)
+	return NewCertificate(certDERBlock.Bytes, "")
 }
 
 func (c *Certificate) GetSha256() string {
@@ -151,5 +152,10 @@ func (c *Certificate) GetCrlLink() string {
 }
 
 func (c *Certificate) IsRoot() bool {
-	return c.x509Cert.IsCA
+	for _, link := range c.GetParentLinks() {
+		if link == c.link {
+			return true
+		}
+	}
+	return false
 }

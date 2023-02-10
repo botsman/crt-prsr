@@ -82,7 +82,7 @@ func Test_loadParentCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parent, err := loadParentCertificate(cert)
+	parent, err := LoadParentCertificate(cert)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func Test_loadRootCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	root, err := loadRootCertificate(cert)
+	root, err := LoadRootCertificate(cert)
 	if err != nil {
 		t.Fatal(err)
 	}
