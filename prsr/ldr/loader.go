@@ -1,6 +1,7 @@
 package ldr
 
 import (
+	"github.com/botsman/crt-prsr/prsr/crl"
 	"github.com/botsman/crt-prsr/prsr/crt"
 	"log"
 )
@@ -73,4 +74,12 @@ func LoadRootCertificate(c *crt.Certificate) (*crt.Certificate, error) {
 		}
 		previous = parent
 	}
+}
+
+func LoadCRL(link string) (*crl.CRL, error) {
+	crl, err := crl.LoadCRLFromUri(link)
+	if err != nil {
+		return nil, err
+	}
+	return crl, nil
 }

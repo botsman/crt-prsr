@@ -46,7 +46,6 @@ func (p *Parser) IsTrusted(c *crt.Certificate) bool {
 		}
 		c = parent
 	}
-
 }
 
 type CertificateDN struct {
