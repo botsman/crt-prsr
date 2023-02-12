@@ -8,6 +8,8 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/cryptobyte"
+	cryptobyte_asn1 "golang.org/x/crypto/cryptobyte/asn1"
 	"io"
 	"math/big"
 	"net/http"
@@ -147,6 +149,42 @@ func (c *Certificate) GetCrlLink() string {
 	// I think that we should parse it here as well
 	for _, url := range c.x509Cert.CRLDistributionPoints {
 		return url
+	}
+	return ""
+}
+
+func (c *Certificate) GetDeltaCRLLink() string {
+	for _, ext := range c.x509Cert.Extensions {
+		if ext.Id.Equal([]int{2, 5, 29, 46}) {
+			// Implementation is copied from the x509 package for the CRLDistributionPoints extension
+			val := cryptobyte.String(ext.Value)
+			if !val.ReadASN1(&val, cryptobyte_asn1.SEQUENCE) {
+				return ""
+			}
+			var dpDER cryptobyte.String
+			if !val.ReadASN1(&dpDER, cryptobyte_asn1.SEQUENCE) {
+				return ""
+			}
+			var dpNameDER cryptobyte.String
+			var dpNamePresent bool
+			if !dpDER.ReadOptionalASN1(&dpNameDER, &dpNamePresent, cryptobyte_asn1.Tag(0).Constructed().ContextSpecific()) {
+				return ""
+			}
+			if !dpNamePresent {
+				return ""
+			}
+			if !dpNameDER.ReadASN1(&dpNameDER, cryptobyte_asn1.Tag(0).Constructed().ContextSpecific()) {
+				return ""
+			}
+			if !dpNameDER.PeekASN1Tag(cryptobyte_asn1.Tag(6).ContextSpecific()) {
+				return ""
+			}
+			var uri cryptobyte.String
+			if !dpNameDER.ReadASN1(&uri, cryptobyte_asn1.Tag(6).ContextSpecific()) {
+				return ""
+			}
+			return string(uri)
+		}
 	}
 	return ""
 }
