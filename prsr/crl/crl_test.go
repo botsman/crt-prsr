@@ -21,7 +21,7 @@ func TestCRL_IsRevoked(t *testing.T) {
 		t.Fatal("CRL is nil")
 	}
 	serialNumber := crl.GetRevokedCertificates()[0].SerialNumber
-	if !crl.IsRevoked(*serialNumber) {
+	if !crl.IsRevoked(serialNumber) {
 		t.Fatal("Serial number not revoked")
 	}
 }
