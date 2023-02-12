@@ -76,10 +76,19 @@ func LoadRootCertificate(c *crt.Certificate) (*crt.Certificate, error) {
 	}
 }
 
-func LoadCRL(link string) (*crl.CRL, error) {
-	crl, err := crl.LoadCRLFromUri(link)
+func LoadCRL(c *crt.Certificate) (*crl.CRL, error) {
+	crl, err := crl.LoadCRLFromUri(c.GetCrlLink())
 	if err != nil {
 		return nil, err
 	}
 	return crl, nil
+}
+
+func IsRevoked(c *crt.Certificate) (bool, error) {
+	crl, err := LoadCRL(c)
+	if err != nil {
+		log.Printf("Failed to load CRL: %s", err)
+		return false, err
+	}
+	return crl.IsRevoked(c.GetSerialNumber()), nil
 }

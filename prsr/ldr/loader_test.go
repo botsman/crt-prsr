@@ -53,3 +53,31 @@ func Test_loadRootCertificate(t *testing.T) {
 		t.Fatalf("Unexpected sha256: %s", root.GetSha256())
 	}
 }
+
+func TestCertificateLoader_LoadCRL(t *testing.T) {
+	cert, err := crt.LoadCertFromPath("../testdata/qwac.crt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	crl, err := LoadCRL(cert)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if crl == nil {
+		t.Fatal("crl should not be nil")
+	}
+}
+
+func TestIsRevoked(t *testing.T) {
+	cert, err := crt.LoadCertFromPath("../testdata/qwac.crt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	revoked, err := IsRevoked(cert)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if revoked {
+		t.Fatal("cert should not be revoked")
+	}
+}

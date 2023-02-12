@@ -36,9 +36,9 @@ func (c *CRL) GetRevokedCertificates() []pkix.RevokedCertificate {
 	return c.certificateList.RevokedCertificates
 }
 
-func (c *CRL) IsRevoked(serialNumber big.Int) bool {
+func (c *CRL) IsRevoked(serialNumber *big.Int) bool {
 	for _, crt := range c.certificateList.RevokedCertificates {
-		if crt.SerialNumber.Cmp(&serialNumber) == 0 {
+		if crt.SerialNumber.Cmp(serialNumber) == 0 {
 			return true
 		}
 	}
