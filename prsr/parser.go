@@ -69,6 +69,7 @@ type ParsedCertificate struct {
 	NotAfter     time.Time           `json:"not_after"`
 	SerialNumber *big.Int            `json:"serial_number"`
 	IsTrusted    bool                `json:"is_trusted"`
+	IsRevoked    bool                `json:"is_revoked"`
 	KeyUsage     string              `json:"key_usage"`
 	ParentLinks  []string            `json:"parent_links"`
 	CrlLink      string              `json:"crl_link"`
@@ -85,28 +86,29 @@ func NewParser(trustedCertificates []crt.Id) *Parser {
 }
 
 func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
-	issuer := CertificateDN{
-		Country:      crt.GetIssuer().Country[0],
-		Organization: crt.GetIssuer().Organization[0],
-		Unit:         crt.GetIssuer().OrganizationalUnit[0],
-	}
 	_, isTrusted := p.trustedCertificates[crt.GetSha256()]
+	isRevoked, _ := ldr.IsRevoked(crt)
 	plugins := make([]PluginParseResult, 0)
 	for _, plugin := range p.plugins {
 		plugins = append(plugins, plugin.Parse(crt))
 	}
 	res := ParsedCertificate{
 		Sha256: crt.GetSha256(),
-		Issuer: issuer,
+		Issuer: CertificateDN{
+			Country:      crt.GetIssuer().Country[0],
+			Organization: crt.GetIssuer().Organization[0],
+			Unit:         crt.GetIssuer().OrganizationalUnit[0],
+		},
 		Subject: CertificateDN{
 			Country:      crt.GetSubject().Country[0],
 			Organization: crt.GetSubject().Organization[0],
-			Unit:         crt.GetSubject().OrganizationalUnit[0],
+			//Unit:         crt.GetSubject().OrganizationalUnit[0],
 		},
 		NotBefore:    crt.GetNotBefore(),
 		NotAfter:     crt.GetNotAfter(),
 		SerialNumber: crt.GetSerialNumber(),
 		IsTrusted:    isTrusted,
+		IsRevoked:    isRevoked,
 		KeyUsage:     crt.GetKeyUsage(),
 		ParentLinks:  crt.GetParentLinks(),
 		CrlLink:      crt.GetCrlLink(),
@@ -114,7 +116,7 @@ func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 	return res, nil
 }
 
-func (p *Parser) ToJson(cert *crt.Certificate) ([]byte, error) {
+func (p *Parser) Json(cert *crt.Certificate) ([]byte, error) {
 	parsed, err := p.Parse(cert)
 	if err != nil {
 		return nil, err
