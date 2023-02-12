@@ -135,3 +135,14 @@ func TestCertificate_GetParentLink(t *testing.T) {
 		t.Fatalf("Unexpected parent link: %s", parentLink)
 	}
 }
+
+func TestCertificate_GetCrlLink(t *testing.T) {
+	cert, err := LoadCertFromString(certString)
+	if err != nil {
+		t.Fatal(err)
+	}
+	crlLink := cert.GetCrlLink()
+	if crlLink != "http://teszt.e-szigno.hu/TCA3.crl" {
+		t.Fatalf("Unexpected crl link: %s", crlLink)
+	}
+}
