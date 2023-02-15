@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewCertificateParser(t *testing.T) {
-	parser := NewParser([]crt.Id{})
+	parser := NewParser([]crt.Id{}, nil)
 	if parser == nil {
 		t.Fatal("parser should not be nil")
 	}
@@ -20,7 +20,7 @@ func TestCertificateParser_Parse(t *testing.T) {
 			IdType: crt.Sha256,
 		},
 	}
-	parser := NewParser(certs)
+	parser := NewParser(certs, nil)
 	cert, err := crt.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +39,7 @@ func TestCertificateParser_Json(t *testing.T) {
 			IdType: crt.Sha256,
 		},
 	}
-	parser := NewParser(certs)
+	parser := NewParser(certs, nil)
 	cert, err := crt.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)

@@ -12,7 +12,9 @@ type Plugin interface {
 	Parse(c *crt.Certificate) PluginParseResult
 }
 
-type PluginParseResult interface{}
+type PluginParseResult interface {
+	MarshalJSON() ([]byte, error)
+}
 
 type Loader interface {
 	Load(trustedCertificates []crt.Id) map[string]struct{}
@@ -76,12 +78,13 @@ type ParsedCertificate struct {
 	Plugins      []PluginParseResult `json:"plugins"`
 }
 
-func NewParser(trustedCertificates []crt.Id) *Parser {
+func NewParser(trustedCertificates []crt.Id, plugins []Plugin) *Parser {
 	loader := ldr.NewCertificateLoader()
 	certsMap := loader.Load(trustedCertificates)
 	return &Parser{
 		loader:              loader,
 		trustedCertificates: certsMap,
+		plugins:             plugins,
 	}
 }
 
@@ -112,6 +115,7 @@ func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 		KeyUsage:     crt.GetKeyUsage(),
 		ParentLinks:  crt.GetParentLinks(),
 		CrlLink:      crt.GetCrlLink(),
+		Plugins:      plugins,
 	}
 	return res, nil
 }
