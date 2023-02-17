@@ -15,30 +15,35 @@ func NewCertificateLoader() *CertificateLoader {
 
 func (l *CertificateLoader) Load(trustedCertificates []crt.Id) map[string]struct{} {
 	trustedHashes := make(map[string]struct{})
-	// TODO: load every crt in a goroutine
+	hashesChan := make(chan string)
 	for _, cId := range trustedCertificates {
-		if cId.IdType == crt.Sha256 {
-			trustedHashes[cId.Val] = struct{}{}
-			continue
-		}
-		if cId.IdType == crt.Uri {
-			cert, err := crt.LoadCertFromUri(cId.Val)
-			if err != nil {
-				log.Printf("Failed to load crt from uri %s: %s", cId.Val, err)
-				continue
+		go func(cId crt.Id, out chan<- string) {
+			if cId.IdType == crt.Sha256 {
+				out <- cId.Val
+				return
 			}
-			trustedHashes[cert.GetSha256()] = struct{}{}
-			continue
-		}
-		if cId.IdType == crt.Path {
-			cert, err := crt.LoadCertFromPath(cId.Val)
-			if err != nil {
-				log.Printf("Failed to load crt from path %s: %s", cId.Val, err)
-				continue
+			if cId.IdType == crt.Uri {
+				cert, err := crt.LoadCertFromUri(cId.Val)
+				if err != nil {
+					log.Printf("Failed to load crt from uri %s: %s", cId.Val, err)
+					return
+				}
+				out <- cert.GetSha256()
+				return
 			}
-			trustedHashes[cert.GetSha256()] = struct{}{}
-			continue
-		}
+			if cId.IdType == crt.Path {
+				cert, err := crt.LoadCertFromPath(cId.Val)
+				if err != nil {
+					log.Printf("Failed to load crt from path %s: %s", cId.Val, err)
+					return
+				}
+				out <- cert.GetSha256()
+				return
+			}
+		}(cId, hashesChan)
+	}
+	for range trustedCertificates {
+		trustedHashes[<-hashesChan] = struct{}{}
 	}
 	return trustedHashes
 }
@@ -77,18 +82,18 @@ func LoadRootCertificate(c *crt.Certificate) (*crt.Certificate, error) {
 }
 
 func LoadCRL(c *crt.Certificate) (*crl.CRL, error) {
-	crl, err := crl.LoadCRLFromUri(c.GetCrlLink())
+	list, err := crl.LoadCRLFromUri(c.GetCrlLink())
 	if err != nil {
 		return nil, err
 	}
-	return crl, nil
+	return list, nil
 }
 
 func IsRevoked(c *crt.Certificate) (bool, error) {
-	crl, err := LoadCRL(c)
+	list, err := LoadCRL(c)
 	if err != nil {
 		log.Printf("Failed to load CRL: %s", err)
 		return false, err
 	}
-	return crl.IsRevoked(c.GetSerialNumber()), nil
+	return list.IsRevoked(c.GetSerialNumber()), nil
 }
