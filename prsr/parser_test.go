@@ -1,7 +1,6 @@
 package prsr
 
 import (
-	"fmt"
 	"github.com/botsman/crt-prsr/prsr/crt"
 	"testing"
 )
@@ -29,7 +28,7 @@ func TestCertificateParser_Parse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(result)
+	t.Log(result)
 }
 
 func TestCertificateParser_Json(t *testing.T) {
@@ -48,5 +47,5 @@ func TestCertificateParser_Json(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(string(result))
+	t.Log(string(result))
 }

@@ -31,7 +31,7 @@ type Id struct {
 }
 
 type Certificate struct {
-	x509Cert *x509.Certificate
+	X509Cert *x509.Certificate
 	link     string // self link to crt (if any)
 }
 
@@ -76,32 +76,32 @@ func LoadCertFromString(content string) (*Certificate, error) {
 }
 
 func (c *Certificate) GetSha256() string {
-	checksum := sha256.Sum256(c.x509Cert.Raw)
+	checksum := sha256.Sum256(c.X509Cert.Raw)
 	return hex.EncodeToString(checksum[:])
 }
 
 func (c *Certificate) GetIssuer() pkix.Name {
-	return c.x509Cert.Issuer
+	return c.X509Cert.Issuer
 }
 
 func (c *Certificate) GetSubject() pkix.Name {
-	return c.x509Cert.Subject
+	return c.X509Cert.Subject
 }
 
 func (c *Certificate) GetNotBefore() time.Time {
-	return c.x509Cert.NotBefore
+	return c.X509Cert.NotBefore
 }
 
 func (c *Certificate) GetNotAfter() time.Time {
-	return c.x509Cert.NotAfter
+	return c.X509Cert.NotAfter
 }
 
 func (c *Certificate) GetSerialNumber() *big.Int {
-	return c.x509Cert.SerialNumber
+	return c.X509Cert.SerialNumber
 }
 
 func (c *Certificate) GetKeyUsage() string {
-	switch c.x509Cert.KeyUsage {
+	switch c.X509Cert.KeyUsage {
 	case x509.KeyUsageDigitalSignature:
 		return "DigitalSignature"
 	case x509.KeyUsageContentCommitment:
@@ -125,36 +125,21 @@ func (c *Certificate) GetKeyUsage() string {
 	}
 }
 
-func (c *Certificate) GetExtensions() []string {
-	var extensions []string
-	for _, extension := range c.x509Cert.Extensions {
-		//	Perhaps there is a better way to get the value of the extension
-		extensions = append(extensions, extension.Id.String())
-	}
-	for _, extension := range c.x509Cert.ExtraExtensions {
-		extensions = append(extensions, extension.Id.String())
-	}
-	for _, extension := range c.x509Cert.UnhandledCriticalExtensions {
-		extensions = append(extensions, extension.String())
-	}
-	return extensions
-}
-
 func (c *Certificate) GetParentLinks() []string {
-	return c.x509Cert.IssuingCertificateURL
+	return c.X509Cert.IssuingCertificateURL
 }
 
 func (c *Certificate) GetCrlLink() string {
 	// There is also an extension "Freshest CRL / Delta CRL Distribution Point".
 	// I think that we should parse it here as well
-	for _, url := range c.x509Cert.CRLDistributionPoints {
+	for _, url := range c.X509Cert.CRLDistributionPoints {
 		return url
 	}
 	return ""
 }
 
 func (c *Certificate) GetDeltaCRLLink() string {
-	for _, ext := range c.x509Cert.Extensions {
+	for _, ext := range c.X509Cert.Extensions {
 		if ext.Id.Equal([]int{2, 5, 29, 46}) {
 			// Implementation is copied from the x509 package for the CRLDistributionPoints extension
 			val := cryptobyte.String(ext.Value)

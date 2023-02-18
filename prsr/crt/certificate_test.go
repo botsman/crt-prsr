@@ -116,14 +116,6 @@ func TestCertificate_GetIssuer(t *testing.T) {
 	}
 }
 
-func TestCertificate_GetExtensions(t *testing.T) {
-	cert, err := LoadCertFromString(certString)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cert.GetExtensions()
-}
-
 func TestCertificate_GetParentLink(t *testing.T) {
 	cert, err := LoadCertFromString(certString)
 	if err != nil {
