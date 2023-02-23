@@ -100,29 +100,66 @@ func (c *Certificate) GetSerialNumber() *big.Int {
 	return c.X509Cert.SerialNumber
 }
 
-func (c *Certificate) GetKeyUsage() string {
+func (c *Certificate) GetKeyUsage() []string {
+	var keyUsage []string
 	switch c.X509Cert.KeyUsage {
 	case x509.KeyUsageDigitalSignature:
-		return "DigitalSignature"
-	case x509.KeyUsageContentCommitment:
-		return "ContentCommitment"
+		keyUsage = append(keyUsage, "DigitalSignature")
 	case x509.KeyUsageKeyEncipherment:
-		return "KeyEncipherment"
+		keyUsage = append(keyUsage, "KeyEncipherment")
+	case x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment:
+		keyUsage = append(keyUsage, "DigitalSignature")
+		keyUsage = append(keyUsage, "KeyEncipherment")
+	case x509.KeyUsageContentCommitment:
+		keyUsage = append(keyUsage, "ContentCommitment")
 	case x509.KeyUsageDataEncipherment:
-		return "DataEncipherment"
+		keyUsage = append(keyUsage, "DataEncipherment")
 	case x509.KeyUsageKeyAgreement:
-		return "KeyAgreement"
+		keyUsage = append(keyUsage, "KeyAgreement")
 	case x509.KeyUsageCertSign:
-		return "CertSign"
+		keyUsage = append(keyUsage, "CertSign")
 	case x509.KeyUsageCRLSign:
-		return "CRLSign"
+		keyUsage = append(keyUsage, "CRLSign")
 	case x509.KeyUsageEncipherOnly:
-		return "EncipherOnly"
+		keyUsage = append(keyUsage, "EncipherOnly")
 	case x509.KeyUsageDecipherOnly:
-		return "DecipherOnly"
-	default:
-		return "Unknown"
+		keyUsage = append(keyUsage, "DecipherOnly")
 	}
+
+	return keyUsage
+}
+
+func (c *Certificate) GetExtKeyUsage() []string {
+	var extKeyUsage []string
+	for _, usage := range c.X509Cert.ExtKeyUsage {
+		switch usage {
+		case x509.ExtKeyUsageAny:
+			extKeyUsage = append(extKeyUsage, "Any")
+		case x509.ExtKeyUsageServerAuth:
+			extKeyUsage = append(extKeyUsage, "ServerAuth")
+		case x509.ExtKeyUsageClientAuth:
+			extKeyUsage = append(extKeyUsage, "ClientAuth")
+		case x509.ExtKeyUsageCodeSigning:
+			extKeyUsage = append(extKeyUsage, "CodeSigning")
+		case x509.ExtKeyUsageEmailProtection:
+			extKeyUsage = append(extKeyUsage, "EmailProtection")
+		case x509.ExtKeyUsageIPSECEndSystem:
+			extKeyUsage = append(extKeyUsage, "IPSECEndSystem")
+		case x509.ExtKeyUsageIPSECTunnel:
+			extKeyUsage = append(extKeyUsage, "IPSECTunnel")
+		case x509.ExtKeyUsageIPSECUser:
+			extKeyUsage = append(extKeyUsage, "IPSECUser")
+		case x509.ExtKeyUsageTimeStamping:
+			extKeyUsage = append(extKeyUsage, "TimeStamping")
+		case x509.ExtKeyUsageOCSPSigning:
+			extKeyUsage = append(extKeyUsage, "OCSPSigning")
+		case x509.ExtKeyUsageMicrosoftServerGatedCrypto:
+			extKeyUsage = append(extKeyUsage, "MicrosoftServerGatedCrypto")
+		case x509.ExtKeyUsageNetscapeServerGatedCrypto:
+			extKeyUsage = append(extKeyUsage, "NetscapeServerGatedCrypto")
+		}
+	}
+	return extKeyUsage
 }
 
 func (c *Certificate) GetParentLinks() []string {
