@@ -4,12 +4,11 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/cryptobyte"
-	cryptobyte_asn1 "golang.org/x/crypto/cryptobyte/asn1"
 	"io"
 	"math/big"
 	"net/http"
@@ -139,36 +138,37 @@ func (c *Certificate) GetCrlLink() string {
 }
 
 func (c *Certificate) GetDeltaCRLLink() string {
+	// CRLDistributionPoints ::= SEQUENCE SIZE (1..MAX) OF DistributionPoint
+	//
+	// DistributionPoint ::= SEQUENCE {
+	//     distributionPoint       [0]     DistributionPointName OPTIONAL,
+	//     reasons                 [1]     ReasonFlags OPTIONAL,
+	//     cRLIssuer               [2]     GeneralNames OPTIONAL }
+	//
+	// DistributionPointName ::= CHOICE {
+	//     fullName                [0]     GeneralNames,
+	//     nameRelativeToCRLIssuer [1]     RelativeDistinguishedName }
 	for _, ext := range c.X509Cert.Extensions {
 		if ext.Id.Equal([]int{2, 5, 29, 46}) {
-			// Implementation is copied from the x509 package for the CRLDistributionPoints extension
-			val := cryptobyte.String(ext.Value)
-			if !val.ReadASN1(&val, cryptobyte_asn1.SEQUENCE) {
+			// Perhaps there is a better way to parse this extension
+			type DistributionPoint struct {
+				Name asn1.RawValue `asn1:"tag:0,optional"`
+			}
+			var val []DistributionPoint
+			if _, err := asn1.Unmarshal(ext.Value, &val); err != nil {
 				return ""
 			}
-			var dpDER cryptobyte.String
-			if !val.ReadASN1(&dpDER, cryptobyte_asn1.SEQUENCE) {
-				return ""
+			for _, dp := range val {
+				dpName := dp.Name
+				var dpVal asn1.RawValue
+				for dpName.IsCompound {
+					if _, err := asn1.Unmarshal(dpName.Bytes, &dpVal); err != nil {
+						break
+					}
+					dpName = dpVal
+				}
+				return string(dpVal.Bytes)
 			}
-			var dpNameDER cryptobyte.String
-			var dpNamePresent bool
-			if !dpDER.ReadOptionalASN1(&dpNameDER, &dpNamePresent, cryptobyte_asn1.Tag(0).Constructed().ContextSpecific()) {
-				return ""
-			}
-			if !dpNamePresent {
-				return ""
-			}
-			if !dpNameDER.ReadASN1(&dpNameDER, cryptobyte_asn1.Tag(0).Constructed().ContextSpecific()) {
-				return ""
-			}
-			if !dpNameDER.PeekASN1Tag(cryptobyte_asn1.Tag(6).ContextSpecific()) {
-				return ""
-			}
-			var uri cryptobyte.String
-			if !dpNameDER.ReadASN1(&uri, cryptobyte_asn1.Tag(6).ContextSpecific()) {
-				return ""
-			}
-			return string(uri)
 		}
 	}
 	return ""
