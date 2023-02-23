@@ -125,8 +125,14 @@ func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 	_, isTrusted := p.trustedCertificates[crt.GetSha256()]
 	isRevoked, _ := ldr.IsRevoked(crt)
 	plugins := make([]PluginParseResult, 0)
+	pluginsResult := make(chan PluginParseResult)
 	for _, plugin := range p.plugins {
-		plugins = append(plugins, plugin.Parse(crt))
+		go func(out chan<- PluginParseResult, p Plugin) {
+			out <- p.Parse(crt)
+		}(pluginsResult, plugin)
+	}
+	for range p.plugins {
+		plugins = append(plugins, <-pluginsResult)
 	}
 	res := ParsedCertificate{
 		Sha256:       crt.GetSha256(),
