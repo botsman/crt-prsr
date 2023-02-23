@@ -1,6 +1,7 @@
 package prsr
 
 import (
+	"crypto/x509/pkix"
 	"encoding/json"
 	"github.com/botsman/crt-prsr/prsr/crt"
 	"github.com/botsman/crt-prsr/prsr/ldr"
@@ -50,29 +51,30 @@ func (p *Parser) IsTrusted(c *crt.Certificate) bool {
 	}
 }
 
-type CertificateDN struct {
-	Country            string `json:"country"`
-	Organization       string `json:"organization"`
-	OrganizationalUnit string `json:"organizational_unit"`
-	Locality           string `json:"locality"`
-	Province           string `json:"province"`
-	StreetAddress      string `json:"street_address"`
-	PostalCode         string `json:"postal_code"`
-	SerialNumber       string `json:"serial_number"`
-	CommonName         string `json:"common_name"`
-	Unit               string `json:"unit"`
+type Organization struct {
+	Country            string `json:"country,omitempty"`
+	Organization       string `json:"organization,omitempty"`
+	OrganizationalUnit string `json:"organizational_unit,omitempty"`
+	Locality           string `json:"locality,omitempty"`
+	Province           string `json:"province,omitempty"`
+	StreetAddress      string `json:"street_address,omitempty"`
+	PostalCode         string `json:"postal_code,omitempty"`
+	SerialNumber       string `json:"serial_number,omitempty"`
+	CommonName         string `json:"common_name,omitempty"`
+	Unit               string `json:"unit,omitempty"`
 }
 
 type ParsedCertificate struct {
 	Sha256       string              `json:"sha256"`
-	Issuer       CertificateDN       `json:"issuer"`
-	Subject      CertificateDN       `json:"subject"`
+	Issuer       Organization        `json:"issuer"`
+	Subject      Organization        `json:"subject"`
 	NotBefore    time.Time           `json:"not_before"`
 	NotAfter     time.Time           `json:"not_after"`
 	SerialNumber *big.Int            `json:"serial_number"`
 	IsTrusted    bool                `json:"is_trusted"`
 	IsRevoked    bool                `json:"is_revoked"`
-	KeyUsage     string              `json:"key_usage"`
+	KeyUsage     []string            `json:"key_usage"`
+	ExtKeyUsage  []string            `json:"ext_key_usage"`
 	ParentLinks  []string            `json:"parent_links"`
 	CrlLink      string              `json:"crl_link"`
 	Plugins      []PluginParseResult `json:"plugins"`
@@ -88,6 +90,37 @@ func NewParser(trustedCertificates []crt.Id, plugins []Plugin) *Parser {
 	}
 }
 
+func (p *Parser) ParseOrganization(org pkix.Name) Organization {
+	var organization Organization
+	if len(org.Country) != 0 {
+		organization.Country = org.Country[0]
+	}
+	if len(org.Organization) != 0 {
+		organization.Organization = org.Organization[0]
+	}
+	if len(org.OrganizationalUnit) != 0 {
+		organization.OrganizationalUnit = org.OrganizationalUnit[0]
+	}
+	if len(org.Locality) != 0 {
+		organization.Locality = org.Locality[0]
+	}
+	if len(org.Province) != 0 {
+		organization.Province = org.Province[0]
+	}
+	if len(org.StreetAddress) != 0 {
+		organization.StreetAddress = org.StreetAddress[0]
+	}
+	if len(org.PostalCode) != 0 {
+		organization.PostalCode = org.PostalCode[0]
+	}
+	organization.SerialNumber = org.SerialNumber
+	organization.CommonName = org.CommonName
+	if len(org.OrganizationalUnit) != 0 {
+		organization.Unit = org.OrganizationalUnit[0]
+	}
+	return organization
+}
+
 func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 	_, isTrusted := p.trustedCertificates[crt.GetSha256()]
 	isRevoked, _ := ldr.IsRevoked(crt)
@@ -96,23 +129,16 @@ func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 		plugins = append(plugins, plugin.Parse(crt))
 	}
 	res := ParsedCertificate{
-		Sha256: crt.GetSha256(),
-		Issuer: CertificateDN{
-			Country:      crt.GetIssuer().Country[0],
-			Organization: crt.GetIssuer().Organization[0],
-			Unit:         crt.GetIssuer().OrganizationalUnit[0],
-		},
-		Subject: CertificateDN{
-			Country:      crt.GetSubject().Country[0],
-			Organization: crt.GetSubject().Organization[0],
-			//Unit:         crt.GetSubject().OrganizationalUnit[0],
-		},
+		Sha256:       crt.GetSha256(),
+		Issuer:       p.ParseOrganization(crt.GetIssuer()),
+		Subject:      p.ParseOrganization(crt.GetSubject()),
 		NotBefore:    crt.GetNotBefore(),
 		NotAfter:     crt.GetNotAfter(),
 		SerialNumber: crt.GetSerialNumber(),
 		IsTrusted:    isTrusted,
 		IsRevoked:    isRevoked,
 		KeyUsage:     crt.GetKeyUsage(),
+		ExtKeyUsage:  crt.GetExtKeyUsage(),
 		ParentLinks:  crt.GetParentLinks(),
 		CrlLink:      crt.GetCrlLink(),
 		Plugins:      plugins,
