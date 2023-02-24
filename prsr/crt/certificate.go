@@ -100,32 +100,43 @@ func (c *Certificate) GetSerialNumber() *big.Int {
 }
 
 func (c *Certificate) GetKeyUsage() []string {
-	var keyUsage []string
-	switch c.X509Cert.KeyUsage {
-	case x509.KeyUsageDigitalSignature:
-		keyUsage = append(keyUsage, "DigitalSignature")
-	case x509.KeyUsageKeyEncipherment:
-		keyUsage = append(keyUsage, "KeyEncipherment")
-	case x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment:
-		keyUsage = append(keyUsage, "DigitalSignature")
-		keyUsage = append(keyUsage, "KeyEncipherment")
-	case x509.KeyUsageContentCommitment:
-		keyUsage = append(keyUsage, "ContentCommitment")
-	case x509.KeyUsageDataEncipherment:
-		keyUsage = append(keyUsage, "DataEncipherment")
-	case x509.KeyUsageKeyAgreement:
-		keyUsage = append(keyUsage, "KeyAgreement")
-	case x509.KeyUsageCertSign:
-		keyUsage = append(keyUsage, "CertSign")
-	case x509.KeyUsageCRLSign:
-		keyUsage = append(keyUsage, "CRLSign")
-	case x509.KeyUsageEncipherOnly:
-		keyUsage = append(keyUsage, "EncipherOnly")
-	case x509.KeyUsageDecipherOnly:
-		keyUsage = append(keyUsage, "DecipherOnly")
+	positiveBits := func(n int) []int {
+		var result []int
+		bit := 1
+		for n != 0 {
+			if n&bit != 0 {
+				result = append(result, bit)
+			}
+			n &= ^bit
+			bit <<= 1
+		}
+		return result
+	}(int(c.X509Cert.KeyUsage))
+	keyUsages := make([]string, len(positiveBits))
+	for _, bit := range positiveBits {
+		switch x509.KeyUsage(bit) {
+		case x509.KeyUsageDigitalSignature:
+			keyUsages = append(keyUsages, "DigitalSignature")
+		case x509.KeyUsageKeyEncipherment:
+			keyUsages = append(keyUsages, "KeyEncipherment")
+		case x509.KeyUsageContentCommitment:
+			keyUsages = append(keyUsages, "ContentCommitment")
+		case x509.KeyUsageDataEncipherment:
+			keyUsages = append(keyUsages, "DataEncipherment")
+		case x509.KeyUsageKeyAgreement:
+			keyUsages = append(keyUsages, "KeyAgreement")
+		case x509.KeyUsageCertSign:
+			keyUsages = append(keyUsages, "CertSign")
+		case x509.KeyUsageCRLSign:
+			keyUsages = append(keyUsages, "CRLSign")
+		case x509.KeyUsageEncipherOnly:
+			keyUsages = append(keyUsages, "EncipherOnly")
+		case x509.KeyUsageDecipherOnly:
+			keyUsages = append(keyUsages, "DecipherOnly")
+		}
 	}
 
-	return keyUsage
+	return keyUsages
 }
 
 func (c *Certificate) GetExtKeyUsage() []string {
