@@ -230,3 +230,16 @@ func (c *Certificate) IsRoot() bool {
 	}
 	return false
 }
+
+func (c *Certificate) Verify(intermediates *x509.CertPool, roots *x509.CertPool, keyUsages []x509.ExtKeyUsage) error {
+	opts := x509.VerifyOptions{
+		Intermediates: intermediates,
+		Roots:         roots,
+		KeyUsages:     keyUsages,
+	}
+	if opts.KeyUsages == nil || len(opts.KeyUsages) == 0 {
+		opts.KeyUsages = []x509.ExtKeyUsage{x509.ExtKeyUsageAny}
+	}
+	_, err := c.X509Cert.Verify(opts)
+	return err
+}
