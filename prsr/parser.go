@@ -1,6 +1,7 @@
 package prsr
 
 import (
+	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
 	"github.com/botsman/crt-prsr/prsr/crt"
@@ -29,26 +30,32 @@ type Parser struct {
 
 func (p *Parser) IsTrusted(c *crt.Certificate) bool {
 	/**
-	Go through the certificate chain and check if any of the certificates
-	are trusted. If so, return true. If not, return false.
+	Go through the certificate chain until we find a trusted certificate or reach the root.
 	*/
+	intermediates := x509.NewCertPool()
+	roots := x509.NewCertPool()
+	parent := c
+	var err error
 	for {
-		_, isTrusted := p.trustedCertificates[c.GetSha256()]
+		_, isTrusted := p.trustedCertificates[parent.GetSha256()]
 		if isTrusted {
-			return true
+			roots.AddCert(parent.X509Cert)
+			break
 		}
-		if c.GetParentLinks() == nil {
+		if parent.GetParentLinks() == nil {
 			return false
 		}
-		if c.IsRoot() {
+		if parent.IsRoot() {
 			return false
 		}
-		parent, err := ldr.LoadParentCertificate(c)
+		parent, err = ldr.LoadParentCertificate(parent)
 		if err != nil {
 			return false
 		}
-		c = parent
+		intermediates.AddCert(parent.X509Cert)
 	}
+	err = c.Verify(intermediates, roots, nil)
+	return err == nil
 }
 
 type Organization struct {
