@@ -25,7 +25,10 @@ func TestCertificateParser_IsTrusted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	isTrusted := parser.IsTrusted(cert)
+	isTrusted, err := parser.IsTrusted(cert)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !isTrusted {
 		t.Fatal("certificate should be trusted")
 	}
@@ -43,7 +46,10 @@ func TestCertificateParser_IsTrustedRoot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	isTrusted := parser.IsTrusted(cert)
+	isTrusted, err := parser.IsTrusted(cert)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !isTrusted {
 		t.Fatal("certificate should be trusted")
 	}
