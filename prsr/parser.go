@@ -27,7 +27,7 @@ type Parser struct {
 	trustedCertificates map[string]struct{}
 }
 
-func (p *Parser) IsTrusted(c *crt.Certificate) bool {
+func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 	/**
 	Go through the certificate chain until we find a trusted certificate or reach the root.
 	*/
@@ -42,19 +42,19 @@ func (p *Parser) IsTrusted(c *crt.Certificate) bool {
 			break
 		}
 		if parent.GetParentLinks() == nil {
-			return false
+			return false, nil
 		}
 		if parent.IsRoot() {
-			return false
+			return false, nil
 		}
 		parent, err = ldr.LoadParentCertificate(parent)
 		if err != nil {
-			return false
+			return false, err
 		}
 		intermediates.AddCert(parent.X509Cert)
 	}
 	err = c.Verify(intermediates, roots, nil)
-	return err == nil
+	return err == nil, err
 }
 
 type Organization struct {
@@ -165,7 +165,7 @@ func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 }
 
 func (p *Parser) ParseAndValidate(crt *crt.Certificate) (ParsedAndValidatedCertificate, error) {
-	_, isTrusted := p.trustedCertificates[crt.GetSha256()]
+	isTrusted, _ := p.IsTrusted(crt)
 	isRevoked, _ := ldr.IsRevoked(crt)
 	parseResult, err := p.Parse(crt)
 	if err != nil {
