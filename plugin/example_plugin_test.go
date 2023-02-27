@@ -7,8 +7,8 @@ import (
 )
 
 func TestExamplePlugin(t *testing.T) {
-	plugins := []prsr.Plugin{
-		&ExamplePlugin{},
+	plugins := map[string]prsr.Plugin{
+		"example": &ExamplePlugin{},
 	}
 	parser := prsr.NewParser([]crt.Id{}, plugins)
 	cert, err := crt.LoadCertFromPath("../prsr/testdata/qwac.crt")
@@ -19,10 +19,10 @@ func TestExamplePlugin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Plugins[0] == nil {
+	if result.Plugins["example"] == nil {
 		t.Fatal("plugin result should not be nil")
 	}
-	examplePluginResult := result.Plugins[0].(*ExamplePluginResult)
+	examplePluginResult := result.Plugins["example"].(*ExamplePluginResult)
 	if examplePluginResult == nil {
 		t.Fatal("examplePluginResult should not be nil")
 	}
