@@ -3,7 +3,6 @@ package prsr
 import (
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/json"
 	"github.com/botsman/crt-prsr/prsr/crt"
 	"github.com/botsman/crt-prsr/prsr/ldr"
 	"math/big"
@@ -24,7 +23,7 @@ type Loader interface {
 
 type Parser struct {
 	loader              Loader
-	plugins             []Plugin
+	plugins             map[string]Plugin
 	trustedCertificates map[string]struct{}
 }
 
@@ -72,22 +71,27 @@ type Organization struct {
 }
 
 type ParsedCertificate struct {
-	Sha256       string              `json:"sha256"`
-	Issuer       Organization        `json:"issuer"`
-	Subject      Organization        `json:"subject"`
-	NotBefore    time.Time           `json:"not_before"`
-	NotAfter     time.Time           `json:"not_after"`
-	SerialNumber *big.Int            `json:"serial_number"`
-	IsTrusted    bool                `json:"is_trusted"`
-	IsRevoked    bool                `json:"is_revoked"`
-	KeyUsage     []string            `json:"key_usage"`
-	ExtKeyUsage  []string            `json:"ext_key_usage"`
-	ParentLinks  []string            `json:"parent_links"`
-	CrlLink      string              `json:"crl_link"`
-	Plugins      []PluginParseResult `json:"plugins"`
+	Sha256       string                       `json:"sha256"`
+	Issuer       Organization                 `json:"issuer"`
+	Subject      Organization                 `json:"subject"`
+	NotBefore    time.Time                    `json:"not_before"`
+	NotAfter     time.Time                    `json:"not_after"`
+	SerialNumber *big.Int                     `json:"serial_number"`
+	KeyUsage     []string                     `json:"key_usage"`
+	ExtKeyUsage  []string                     `json:"ext_key_usage"`
+	ParentLinks  []string                     `json:"parent_links"`
+	CrlLink      string                       `json:"crl_link"`
+	Plugins      map[string]PluginParseResult `json:"plugins"`
 }
 
-func NewParser(trustedCertificates []crt.Id, plugins []Plugin) *Parser {
+type ParsedAndValidatedCertificate struct {
+	ParsedCertificate
+	IsTrusted bool `json:"is_trusted"`
+	IsRevoked bool `json:"is_revoked"`
+	IsValid   bool `json:"is_valid"`
+}
+
+func NewParser(trustedCertificates []crt.Id, plugins map[string]Plugin) *Parser {
 	loader := ldr.NewCertificateLoader()
 	certsMap := loader.Load(trustedCertificates)
 	return &Parser{
@@ -129,17 +133,20 @@ func (p *Parser) ParseOrganization(org pkix.Name) Organization {
 }
 
 func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
-	_, isTrusted := p.trustedCertificates[crt.GetSha256()]
-	isRevoked, _ := ldr.IsRevoked(crt)
-	plugins := make([]PluginParseResult, 0)
-	pluginsResult := make(chan PluginParseResult)
-	for _, plugin := range p.plugins {
-		go func(out chan<- PluginParseResult, p Plugin) {
-			out <- p.Parse(crt)
-		}(pluginsResult, plugin)
+	type PluginResultPair struct {
+		Name  string
+		Value PluginParseResult
+	}
+	plugins := make(map[string]PluginParseResult, 0)
+	pluginsResult := make(chan PluginResultPair)
+	for name, plugin := range p.plugins {
+		go func(out chan<- PluginResultPair, n string, p Plugin) {
+			out <- PluginResultPair{Name: n, Value: p.Parse(crt)}
+		}(pluginsResult, name, plugin)
 	}
 	for range p.plugins {
-		plugins = append(plugins, <-pluginsResult)
+		res := <-pluginsResult
+		plugins[res.Name] = res.Value
 	}
 	res := ParsedCertificate{
 		Sha256:       crt.GetSha256(),
@@ -148,8 +155,6 @@ func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 		NotBefore:    crt.GetNotBefore(),
 		NotAfter:     crt.GetNotAfter(),
 		SerialNumber: crt.GetSerialNumber(),
-		IsTrusted:    isTrusted,
-		IsRevoked:    isRevoked,
 		KeyUsage:     crt.GetKeyUsage(),
 		ExtKeyUsage:  crt.GetExtKeyUsage(),
 		ParentLinks:  crt.GetParentLinks(),
@@ -159,10 +164,18 @@ func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 	return res, nil
 }
 
-func (p *Parser) Json(cert *crt.Certificate) ([]byte, error) {
-	parsed, err := p.Parse(cert)
+func (p *Parser) ParseAndValidate(crt *crt.Certificate) (ParsedAndValidatedCertificate, error) {
+	_, isTrusted := p.trustedCertificates[crt.GetSha256()]
+	isRevoked, _ := ldr.IsRevoked(crt)
+	parseResult, err := p.Parse(crt)
 	if err != nil {
-		return nil, err
+		return ParsedAndValidatedCertificate{}, err
 	}
-	return json.Marshal(parsed)
+	res := ParsedAndValidatedCertificate{
+		ParsedCertificate: parseResult,
+		IsTrusted:         isTrusted,
+		IsRevoked:         isRevoked,
+		IsValid:           isTrusted && !isRevoked,
+	}
+	return res, nil
 }
