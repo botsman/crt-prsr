@@ -59,43 +59,6 @@ mOaW
 -----END CERTIFICATE-----
 `
 
-func TestLoadCertFromPath(t *testing.T) {
-	cert, err := LoadCertFromPath("../testdata/qwac.crt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cert.GetSha256() != "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565" {
-		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
-	}
-}
-
-func TestLoadCertFromUri(t *testing.T) {
-	cert, err := LoadCertFromUri("https://pki.goog/repo/certs/gts1c3.der")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cert.GetSha256() != "23ecb03eec17338c4e33a6b48a41dc3cda12281bbc3ff813c0589d6cc2387522" {
-		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
-	}
-}
-
-func TestLoadCertFromString(t *testing.T) {
-	cert, err := LoadCertFromString(certString)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cert.GetSha256() != "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565" {
-		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
-	}
-}
-
-func TestLoadCertFromUriWithInvalidUri(t *testing.T) {
-	_, err := LoadCertFromUri("https://pki.goog/repo/certs/gts1c3.der/")
-	if err == nil {
-		t.Fatal("Expected error")
-	}
-}
-
 func TestCertificate_GetIssuer(t *testing.T) {
 	cert, err := LoadCertFromString(certString)
 	if err != nil {

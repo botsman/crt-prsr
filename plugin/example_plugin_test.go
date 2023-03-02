@@ -11,7 +11,7 @@ func TestExamplePlugin(t *testing.T) {
 		"example": &ExamplePlugin{},
 	}
 	parser := prsr.NewParser([]crt.Id{}, plugins)
-	cert, err := crt.LoadCertFromPath("../prsr/testdata/qwac.crt")
+	cert, err := parser.LoadCertFromPath("../prsr/testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}

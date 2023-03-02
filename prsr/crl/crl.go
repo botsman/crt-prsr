@@ -3,9 +3,7 @@ package crl
 import (
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"io"
 	"math/big"
-	"net/http"
 )
 
 type CRL struct {
@@ -18,18 +16,6 @@ func NewCRL(content []byte) (*CRL, error) {
 		return nil, err
 	}
 	return &CRL{certList}, nil
-}
-
-func LoadCRLFromUri(uri string) (*CRL, error) {
-	response, err := http.Get(uri)
-	if err != nil {
-		return nil, err
-	}
-	content, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	return NewCRL(content)
 }
 
 func (c *CRL) GetRevokedCertificates() []pkix.RevokedCertificate {
