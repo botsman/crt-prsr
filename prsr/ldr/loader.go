@@ -123,15 +123,6 @@ func (l *CertificateLoader) LoadCRL(c *crt.Certificate) (*crl.CRL, error) {
 	return list, nil
 }
 
-func (l *CertificateLoader) IsRevoked(c *crt.Certificate) (bool, error) {
-	list, err := l.LoadCRL(c)
-	if err != nil {
-		log.Printf("Failed to load CRL: %s", err)
-		return false, err
-	}
-	return list.IsRevoked(c.GetSerialNumber()), nil
-}
-
 func (l *CertificateLoader) LoadCertFromBytes(content []byte) (*crt.Certificate, error) {
 	certDERBlock, _ := pem.Decode(content)
 	if certDERBlock == nil {

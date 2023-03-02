@@ -3,6 +3,7 @@ package prsr
 import (
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"github.com/botsman/crt-prsr/prsr/crl"
 	"github.com/botsman/crt-prsr/prsr/crt"
 	"github.com/botsman/crt-prsr/prsr/ldr"
 	"math/big"
@@ -19,9 +20,10 @@ type PluginParseResult interface {
 
 type Loader interface {
 	Load(trustedCertificates []crt.Id) map[string]struct{}
-	LoadParentCertificate(parent *crt.Certificate) (*crt.Certificate, error)
-	LoadCertFromPath(s string) (*crt.Certificate, error)
-	IsRevoked(certificate *crt.Certificate) (bool, error)
+	LoadParentCertificate(crt *crt.Certificate) (*crt.Certificate, error)
+	LoadRootCertificate(crt *crt.Certificate) (*crt.Certificate, error)
+	LoadCertFromPath(path string) (*crt.Certificate, error)
+	LoadCRL(crt *crt.Certificate) (*crl.CRL, error)
 }
 
 type Parser struct {
@@ -58,6 +60,22 @@ func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 	}
 	err = c.Verify(intermediates, roots, nil)
 	return err == nil, err
+}
+
+func (p *Parser) IsRevoked(c *crt.Certificate) (bool, error) {
+	list, err := p.loader.LoadCRL(c)
+	if err != nil {
+		return false, err
+	}
+	return list.IsRevoked(c.GetSerialNumber()), nil
+}
+
+func (p *Parser) LoadCertFromPath(path string) (*crt.Certificate, error) {
+	cert, err := p.loader.LoadCertFromPath(path)
+	if err != nil {
+		return nil, err
+	}
+	return cert, nil
 }
 
 type Organization struct {
@@ -102,10 +120,6 @@ func NewParser(trustedCertificates []crt.Id, plugins map[string]Plugin) *Parser 
 		trustedCertificates: certsMap,
 		plugins:             plugins,
 	}
-}
-
-func (p *Parser) LoadCertFromPath(s string) (*crt.Certificate, error) {
-	return p.loader.LoadCertFromPath(s)
 }
 
 func (p *Parser) ParseOrganization(org pkix.Name) Organization {
@@ -173,7 +187,7 @@ func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 
 func (p *Parser) ParseAndValidate(crt *crt.Certificate) (ParsedAndValidatedCertificate, error) {
 	isTrusted, _ := p.IsTrusted(crt)
-	isRevoked, _ := p.loader.IsRevoked(crt)
+	isRevoked, _ := p.IsRevoked(crt)
 	parseResult, err := p.Parse(crt)
 	if err != nil {
 		return ParsedAndValidatedCertificate{}, err

@@ -128,21 +128,6 @@ func TestCertificateLoader_LoadCRL(t *testing.T) {
 	}
 }
 
-func TestIsRevoked(t *testing.T) {
-	loader := NewCertificateLoader()
-	cert, err := loader.LoadCertFromPath("../testdata/qwac.crt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	revoked, err := loader.IsRevoked(cert)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if revoked {
-		t.Fatal("cert should not be revoked")
-	}
-}
-
 func TestLoadCRLFromUri(t *testing.T) {
 	loader := NewCertificateLoader()
 	crl, err := loader.LoadCRLFromUri("http://qtlsca2018-crl1.e-szigno.hu/qtlsca2018.crl")
