@@ -19,6 +19,9 @@ type PluginParseResult interface {
 
 type Loader interface {
 	Load(trustedCertificates []crt.Id) map[string]struct{}
+	LoadParentCertificate(parent *crt.Certificate) (*crt.Certificate, error)
+	LoadCertFromPath(s string) (*crt.Certificate, error)
+	IsRevoked(certificate *crt.Certificate) (bool, error)
 }
 
 type Parser struct {
@@ -47,7 +50,7 @@ func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 		if parent.IsRoot() {
 			return false, nil
 		}
-		parent, err = ldr.LoadParentCertificate(parent)
+		parent, err = p.loader.LoadParentCertificate(parent)
 		if err != nil {
 			return false, err
 		}
@@ -99,6 +102,10 @@ func NewParser(trustedCertificates []crt.Id, plugins map[string]Plugin) *Parser 
 		trustedCertificates: certsMap,
 		plugins:             plugins,
 	}
+}
+
+func (p *Parser) LoadCertFromPath(s string) (*crt.Certificate, error) {
+	return p.loader.LoadCertFromPath(s)
 }
 
 func (p *Parser) ParseOrganization(org pkix.Name) Organization {
@@ -166,7 +173,7 @@ func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 
 func (p *Parser) ParseAndValidate(crt *crt.Certificate) (ParsedAndValidatedCertificate, error) {
 	isTrusted, _ := p.IsTrusted(crt)
-	isRevoked, _ := ldr.IsRevoked(crt)
+	isRevoked, _ := p.loader.IsRevoked(crt)
 	parseResult, err := p.Parse(crt)
 	if err != nil {
 		return ParsedAndValidatedCertificate{}, err

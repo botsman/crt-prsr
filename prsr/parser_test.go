@@ -21,7 +21,7 @@ func TestCertificateParser_IsTrusted(t *testing.T) {
 		},
 	}
 	parser := NewParser(certs, nil)
-	cert, err := crt.LoadCertFromPath("testdata/qwac.crt")
+	cert, err := parser.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestCertificateParser_IsTrustedRoot(t *testing.T) {
 		},
 	}
 	parser := NewParser(certs, nil)
-	cert, err := crt.LoadCertFromPath("testdata/qwac.crt")
+	cert, err := parser.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestCertificateParser_Parse(t *testing.T) {
 		},
 	}
 	parser := NewParser(certs, nil)
-	cert, err := crt.LoadCertFromPath("testdata/qwac.crt")
+	cert, err := parser.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestCertificateParser_ParseAndValidate(t *testing.T) {
 		},
 	}
 	parser := NewParser(certs, nil)
-	cert, err := crt.LoadCertFromPath("testdata/qwac.crt")
+	cert, err := parser.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestCertificateParser_Json(t *testing.T) {
 		},
 	}
 	parser := NewParser(certs, nil)
-	cert, err := crt.LoadCertFromPath("testdata/qwac.crt")
+	cert, err := parser.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}

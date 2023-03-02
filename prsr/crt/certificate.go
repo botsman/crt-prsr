@@ -9,10 +9,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io"
 	"math/big"
-	"net/http"
-	"os"
 	"time"
 )
 
@@ -42,27 +39,7 @@ func NewCertificate(content []byte, uri string) (*Certificate, error) {
 	return &Certificate{x509Cert, uri}, nil
 }
 
-func LoadCertFromPath(path string) (*Certificate, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	return LoadCertFromString(string(content))
-}
-
-func LoadCertFromUri(uri string) (*Certificate, error) {
-	response, err := http.Get(uri)
-	if err != nil {
-		return nil, err
-	}
-	content, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	return NewCertificate(content, uri)
-}
-
+// LoadCertFromString Helper function. Do not use in production.
 func LoadCertFromString(content string) (*Certificate, error) {
 	certDERBlock, _ := pem.Decode([]byte(content))
 	if certDERBlock == nil {
