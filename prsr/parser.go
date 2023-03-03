@@ -21,8 +21,6 @@ type PluginParseResult interface {
 type Loader interface {
 	Load(trustedCertificates []crt.Id) map[string]struct{}
 	LoadParentCertificate(crt *crt.Certificate) (*crt.Certificate, error)
-	LoadRootCertificate(crt *crt.Certificate) (*crt.Certificate, error)
-	LoadCertFromPath(path string) (*crt.Certificate, error)
 	LoadCRL(crt *crt.Certificate) (*crl.CRL, error)
 }
 
@@ -70,14 +68,6 @@ func (p *Parser) IsRevoked(c *crt.Certificate) (bool, error) {
 	return list.IsRevoked(c.GetSerialNumber()), nil
 }
 
-func (p *Parser) LoadCertFromPath(path string) (*crt.Certificate, error) {
-	cert, err := p.loader.LoadCertFromPath(path)
-	if err != nil {
-		return nil, err
-	}
-	return cert, nil
-}
-
 type Organization struct {
 	Country            string `json:"country,omitempty"`
 	Organization       string `json:"organization,omitempty"`
@@ -112,8 +102,10 @@ type ParsedAndValidatedCertificate struct {
 	IsValid   bool `json:"is_valid"`
 }
 
-func NewParser(trustedCertificates []crt.Id, plugins map[string]Plugin) *Parser {
-	loader := ldr.NewCertificateLoader()
+func NewParser(trustedCertificates []crt.Id, loader Loader, plugins map[string]Plugin) *Parser {
+	if loader == nil {
+		loader = ldr.NewCertificateLoader()
+	}
 	certsMap := loader.Load(trustedCertificates)
 	return &Parser{
 		loader:              loader,
