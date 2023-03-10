@@ -3,7 +3,6 @@ package ldr
 import (
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"github.com/botsman/crt-prsr/prsr/crl"
 	"github.com/botsman/crt-prsr/prsr/crt"
 	"github.com/fullsailor/pkcs7"
@@ -151,7 +150,7 @@ func (l *CertificateLoader) LoadCRL(c *crt.Certificate) (*crl.CRL, error) {
 	return list, nil
 }
 
-func (l *CertificateLoader) LoadCertFromBytes(content []byte, uri string) ([]*crt.Certificate, error) {
+func (l *CertificateLoader) LoadCertFromBytesPem(content []byte, uri string) ([]*crt.Certificate, error) {
 	rest := content
 	var certs []*crt.Certificate
 	for len(rest) > 0 {
@@ -170,6 +169,46 @@ func (l *CertificateLoader) LoadCertFromBytes(content []byte, uri string) ([]*cr
 		certs = append(certs, cert)
 	}
 	return certs, nil
+}
+
+func (l *CertificateLoader) LoadCertFromBytesDer(content []byte, uri string) ([]*crt.Certificate, error) {
+	cert, err := crt.NewCertificate(content, uri)
+	if err != nil {
+		return nil, err
+	}
+	return []*crt.Certificate{cert}, nil
+}
+
+func (l *CertificateLoader) LoadCertFromBytesPkcs7(content []byte, uri string) ([]*crt.Certificate, error) {
+	parsed, err := pkcs7.Parse(content)
+	if err != nil {
+		return nil, err
+	}
+	var certs []*crt.Certificate
+	for _, cert := range parsed.Certificates {
+		c, err := crt.NewCertificate(cert.Raw, uri)
+		if err != nil {
+			return nil, err
+		}
+		certs = append(certs, c)
+	}
+	return certs, nil
+}
+
+func (l *CertificateLoader) LoadCertFromBytes(content []byte, uri string) ([]*crt.Certificate, error) {
+	const pemPrefix = "-----BEGIN CERTIFICATE-----"
+	if len(content) > len(pemPrefix) && string(content[:len(pemPrefix)]) == pemPrefix {
+		return l.LoadCertFromBytesPem(content, uri)
+	}
+	if content[0] == 0x30 && content[1] == 0x82 {
+		if strings.HasSuffix(uri, ".cer") || strings.HasSuffix(uri, ".der") || strings.HasSuffix(uri, ".crt") {
+			return l.LoadCertFromBytesDer(content, uri)
+		}
+		if strings.HasSuffix(uri, ".p7b") || strings.HasSuffix(uri, ".p7c") {
+			return l.LoadCertFromBytesPkcs7(content, uri)
+		}
+	}
+	return nil, errors.New("unknown certificate format")
 }
 
 func (l *CertificateLoader) LoadCertFromPKCS7(content []byte, uri string) ([]*crt.Certificate, error) {
@@ -199,22 +238,6 @@ func (l *CertificateLoader) LoadCertFromPath(path string) ([]*crt.Certificate, e
 	return l.LoadCertFromBytes(content, "")
 }
 
-func (l *CertificateLoader) GetCertificateFormat(content []byte, filename string) crt.CertificateFormat {
-	const pemPrefix = "-----BEGIN CERTIFICATE-----"
-	if len(content) > len(pemPrefix) && string(content[:len(pemPrefix)]) == pemPrefix {
-		return crt.PEM
-	}
-	if content[0] == 0x30 && content[1] == 0x82 {
-		if strings.HasSuffix(filename, ".cer") || strings.HasSuffix(filename, ".der") || strings.HasSuffix(filename, ".crt") {
-			return crt.DER
-		}
-		if strings.HasSuffix(filename, ".p7b") || strings.HasSuffix(filename, ".p7c") {
-			return crt.PKCS7
-		}
-	}
-	return crt.Unknown
-}
-
 func (l *CertificateLoader) LoadCertFromUri(uri string) ([]*crt.Certificate, error) {
 	response, err := http.Get(uri)
 	if err != nil {
@@ -224,18 +247,5 @@ func (l *CertificateLoader) LoadCertFromUri(uri string) ([]*crt.Certificate, err
 	if err != nil {
 		return nil, err
 	}
-	switch l.GetCertificateFormat(content, uri) {
-	case crt.PEM:
-		return l.LoadCertFromBytes(content, uri)
-	case crt.DER:
-		cert, err := crt.NewCertificate(content, uri)
-		if err != nil {
-			return nil, err
-		}
-		return []*crt.Certificate{cert}, nil
-	case crt.PKCS7:
-		return l.LoadCertFromPKCS7(content, uri)
-	default:
-		return nil, errors.New(fmt.Sprintf("Unknown certificate format for %s", uri))
-	}
+	return l.LoadCertFromBytes(content, uri)
 }

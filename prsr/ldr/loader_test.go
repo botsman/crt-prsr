@@ -2,6 +2,8 @@ package ldr
 
 import (
 	"github.com/botsman/crt-prsr/prsr/crt"
+	"io"
+	"net/http"
 	"testing"
 )
 
@@ -198,5 +200,28 @@ func TestLoadCertFromUriWithInvalidUri(t *testing.T) {
 	_, err := loader.LoadCertFromUri("https://pki.goog/repo/certs/gts1c3.der/")
 	if err == nil {
 		t.Fatal("Expected error")
+	}
+}
+
+func TestLoadCert_p7cFormat(t *testing.T) {
+	const uri = "http://aia.entrust.net/esqseal1-g4.p7c"
+	content, err := http.Get(uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := io.ReadAll(content.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	loader := NewCertificateLoader()
+	cert, err := loader.LoadCertFromBytes(body, uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cert == nil {
+		t.Fatal("cert should not be nil")
+	}
+	if len(cert) != 2 {
+		t.Fatalf("Unexpected cert count: %d", len(cert))
 	}
 }
