@@ -63,7 +63,10 @@ mOaW
 `
 
 func TestNewCertificateLoader(t *testing.T) {
-	NewCertificateLoader()
+	loader := NewCertificateLoader()
+	if loader == nil {
+		t.Fatal("loader should not be nil")
+	}
 }
 
 func TestCertificateLoader_Load(t *testing.T) {
@@ -83,7 +86,7 @@ func Test_loadParentCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parent, err := loader.LoadParentCertificate(cert)
+	parent, err := loader.LoadParentCertificate(cert[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +104,7 @@ func Test_loadRootCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	root, err := loader.LoadRootCertificate(cert)
+	root, err := loader.LoadRootCertificate(cert[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +122,7 @@ func TestCertificateLoader_LoadCRL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	crl, err := loader.LoadCRL(cert)
+	crl, err := loader.LoadCRL(cert[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,10 +159,11 @@ func TestCRL_IsRevoked(t *testing.T) {
 
 func TestLoadCertFromPath(t *testing.T) {
 	loader := NewCertificateLoader()
-	cert, err := loader.LoadCertFromPath("../testdata/qwac.crt")
+	certs, err := loader.LoadCertFromPath("../testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := certs[0]
 	if cert.GetSha256() != "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565" {
 		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
 	}
@@ -167,10 +171,11 @@ func TestLoadCertFromPath(t *testing.T) {
 
 func TestLoadCertFromUri(t *testing.T) {
 	loader := NewCertificateLoader()
-	cert, err := loader.LoadCertFromUri("https://pki.goog/repo/certs/gts1c3.der")
+	certs, err := loader.LoadCertFromUri("https://pki.goog/repo/certs/gts1c3.der")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := certs[0]
 	if cert.GetSha256() != "23ecb03eec17338c4e33a6b48a41dc3cda12281bbc3ff813c0589d6cc2387522" {
 		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
 	}
@@ -178,10 +183,11 @@ func TestLoadCertFromUri(t *testing.T) {
 
 func TestLoadCertFromString(t *testing.T) {
 	loader := NewCertificateLoader()
-	cert, err := loader.LoadCertFromBytes([]byte(certString))
+	certs, err := loader.LoadCertFromBytes([]byte(certString), "")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := certs[0]
 	if cert.GetSha256() != "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565" {
 		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
 	}

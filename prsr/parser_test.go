@@ -23,10 +23,11 @@ func TestCertificateParser_IsTrusted(t *testing.T) {
 	}
 	loader := ldr.NewCertificateLoader()
 	parser := NewParser(certs, loader, nil)
-	cert, err := loader.LoadCertFromPath("testdata/qwac.crt")
+	crts, err := loader.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := crts[0]
 	isTrusted, err := parser.IsTrusted(cert)
 	if err != nil {
 		t.Fatal(err)
@@ -45,10 +46,11 @@ func TestCertificateParser_IsTrustedRoot(t *testing.T) {
 	}
 	loader := ldr.NewCertificateLoader()
 	parser := NewParser(certs, loader, nil)
-	cert, err := loader.LoadCertFromPath("testdata/qwac.crt")
+	crts, err := loader.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := crts[0]
 	isTrusted, err := parser.IsTrusted(cert)
 	if err != nil {
 		t.Fatal(err)
@@ -67,10 +69,11 @@ func TestCertificateParser_Parse(t *testing.T) {
 	}
 	loader := ldr.NewCertificateLoader()
 	parser := NewParser(certs, loader, nil)
-	cert, err := loader.LoadCertFromPath("testdata/qwac.crt")
+	crts, err := loader.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := crts[0]
 	result, err := parser.Parse(cert)
 	if err != nil {
 		t.Fatal(err)
@@ -87,10 +90,11 @@ func TestCertificateParser_ParseAndValidate(t *testing.T) {
 	}
 	loader := ldr.NewCertificateLoader()
 	parser := NewParser(certs, loader, nil)
-	cert, err := loader.LoadCertFromPath("testdata/qwac.crt")
+	crts, err := loader.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := crts[0]
 	result, err := parser.ParseAndValidate(cert)
 	if err != nil {
 		t.Fatal(err)
@@ -109,10 +113,11 @@ func TestCertificateParser_Json(t *testing.T) {
 	}
 	loader := ldr.NewCertificateLoader()
 	parser := NewParser(certs, loader, nil)
-	cert, err := loader.LoadCertFromPath("testdata/qwac.crt")
+	crts, err := loader.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := crts[0]
 	result, err := parser.ParseAndValidate(cert)
 	if err != nil {
 		t.Fatal(err)
