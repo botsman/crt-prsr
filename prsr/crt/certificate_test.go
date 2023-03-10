@@ -1,6 +1,14 @@
 package crt
 
-import "testing"
+import (
+	"encoding/pem"
+	"errors"
+	"fmt"
+	"github.com/fullsailor/pkcs7"
+	"io"
+	"net/http"
+	"testing"
+)
 
 const certString = `-----BEGIN CERTIFICATE-----
 MIIJvzCCCKegAwIBAgINfFpB/JRgotxghHiHCjANBgkqhkiG9w0BAQsFADBqMQsw
@@ -59,6 +67,17 @@ mOaW
 -----END CERTIFICATE-----
 `
 
+func LoadCertFromString(content string) (*Certificate, error) {
+	certDERBlock, _ := pem.Decode([]byte(content))
+	if certDERBlock == nil {
+		return nil, errors.New("invalid crt content")
+	}
+	if certDERBlock.Type != "CERTIFICATE" {
+		return nil, errors.New(fmt.Sprintf("Only public certificates supported. Got: %s", certDERBlock.Type))
+	}
+	return NewCertificate(certDERBlock.Bytes, "")
+}
+
 func TestCertificate_GetIssuer(t *testing.T) {
 	cert, err := LoadCertFromString(certString)
 	if err != nil {
@@ -100,4 +119,25 @@ func TestCertificate_GetCrlLink(t *testing.T) {
 	if crlLink != "http://teszt.e-szigno.hu/TCA3.crl" {
 		t.Fatalf("Unexpected crl link: %s", crlLink)
 	}
+}
+
+func TestCertificate_p7cFormat(t *testing.T) {
+	const uri = "http://aia.entrust.net/esqseal1-g4.p7c"
+	content, err := http.Get(uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := io.ReadAll(content.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, _ := pkcs7.Parse(body)
+	fmt.Println(parsed.Certificates[0].Subject)
+	//cert, err := NewCertificate(body, uri)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//fmt.Println(cert.GetIssuer())
+	//fmt.Println(certDERBlock)
+	//fmt.Println(rest)
 }

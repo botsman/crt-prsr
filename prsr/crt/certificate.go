@@ -6,9 +6,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/hex"
-	"encoding/pem"
-	"errors"
-	"fmt"
 	"math/big"
 	"time"
 )
@@ -26,6 +23,15 @@ type Id struct {
 	IdType Type
 }
 
+type CertificateFormat int
+
+const (
+	PEM CertificateFormat = iota
+	DER
+	PKCS7
+	Unknown
+)
+
 type Certificate struct {
 	X509Cert *x509.Certificate
 	link     string // self link to crt (if any)
@@ -37,18 +43,6 @@ func NewCertificate(content []byte, uri string) (*Certificate, error) {
 		return nil, err
 	}
 	return &Certificate{x509Cert, uri}, nil
-}
-
-// LoadCertFromString Helper function. Do not use in production.
-func LoadCertFromString(content string) (*Certificate, error) {
-	certDERBlock, _ := pem.Decode([]byte(content))
-	if certDERBlock == nil {
-		return nil, errors.New("invalid crt content")
-	}
-	if certDERBlock.Type != "CERTIFICATE" {
-		return nil, errors.New(fmt.Sprintf("Only public certificates supported. Got: %s", certDERBlock.Type))
-	}
-	return NewCertificate(certDERBlock.Bytes, "")
 }
 
 func (c *Certificate) GetSha256() string {

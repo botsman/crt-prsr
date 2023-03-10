@@ -20,6 +20,7 @@ type PluginParseResult interface {
 
 type Loader interface {
 	Load(trustedCertificates []crt.Id) map[string]struct{}
+	LoadCertFromBytes(content []byte, uri string) ([]*crt.Certificate, error)
 	LoadParentCertificate(crt *crt.Certificate) (*crt.Certificate, error)
 	LoadCRL(crt *crt.Certificate) (*crl.CRL, error)
 }
@@ -28,6 +29,10 @@ type Parser struct {
 	loader              Loader
 	plugins             map[string]Plugin
 	trustedCertificates map[string]struct{}
+}
+
+func (p *Parser) LoadCertFromBytes(content []byte) ([]*crt.Certificate, error) {
+	return p.loader.LoadCertFromBytes(content, "")
 }
 
 func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {

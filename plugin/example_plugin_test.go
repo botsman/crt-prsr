@@ -13,10 +13,11 @@ func TestExamplePlugin(t *testing.T) {
 	}
 	loader := ldr.NewCertificateLoader()
 	parser := prsr.NewParser([]crt.Id{}, loader, plugins)
-	cert, err := loader.LoadCertFromPath("../prsr/testdata/qwac.crt")
+	crts, err := loader.LoadCertFromPath("../prsr/testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := crts[0]
 	result, err := parser.Parse(cert)
 	if err != nil {
 		t.Fatal(err)
