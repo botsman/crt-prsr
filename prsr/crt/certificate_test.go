@@ -117,3 +117,14 @@ func TestCertificate_GetCrlLink(t *testing.T) {
 		t.Fatalf("Unexpected crl link: %s", crlLink)
 	}
 }
+
+func TestCertificate_GetKeyUsage(t *testing.T) {
+	cert, err := LoadCertFromString(certString)
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyUsage := cert.GetKeyUsage()
+	if len(keyUsage) != 2 {
+		t.Fatalf("Unexpected key usage: %v", keyUsage)
+	}
+}

@@ -23,15 +23,6 @@ type Id struct {
 	IdType Type
 }
 
-type CertificateFormat int
-
-const (
-	PEM CertificateFormat = iota
-	DER
-	PKCS7
-	Unknown
-)
-
 type Certificate struct {
 	X509Cert *x509.Certificate
 	link     string // self link to crt (if any)
@@ -84,27 +75,30 @@ func (c *Certificate) GetKeyUsage() []string {
 		return result
 	}(int(c.X509Cert.KeyUsage))
 	keyUsages := make([]string, len(positiveBits))
-	for _, bit := range positiveBits {
+	for i, bit := range positiveBits {
+		var keyUsage string
 		switch x509.KeyUsage(bit) {
 		case x509.KeyUsageDigitalSignature:
-			keyUsages = append(keyUsages, "DigitalSignature")
+			keyUsage = "DigitalSignature"
 		case x509.KeyUsageKeyEncipherment:
-			keyUsages = append(keyUsages, "KeyEncipherment")
+			keyUsage = "KeyEncipherment"
 		case x509.KeyUsageContentCommitment:
 			keyUsages = append(keyUsages, "ContentCommitment")
+			keyUsage = "KeyEncipherment"
 		case x509.KeyUsageDataEncipherment:
-			keyUsages = append(keyUsages, "DataEncipherment")
+			keyUsage = "DataEncipherment"
 		case x509.KeyUsageKeyAgreement:
-			keyUsages = append(keyUsages, "KeyAgreement")
+			keyUsage = "KeyAgreement"
 		case x509.KeyUsageCertSign:
-			keyUsages = append(keyUsages, "CertSign")
+			keyUsage = "CertSign"
 		case x509.KeyUsageCRLSign:
-			keyUsages = append(keyUsages, "CRLSign")
+			keyUsage = "CRLSign"
 		case x509.KeyUsageEncipherOnly:
-			keyUsages = append(keyUsages, "EncipherOnly")
+			keyUsage = "EncipherOnly"
 		case x509.KeyUsageDecipherOnly:
-			keyUsages = append(keyUsages, "DecipherOnly")
+			keyUsage = "DecipherOnly"
 		}
+		keyUsages[i] = keyUsage
 	}
 
 	return keyUsages
