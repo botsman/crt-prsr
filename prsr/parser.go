@@ -15,7 +15,6 @@ type Plugin interface {
 }
 
 type PluginParseResult interface {
-	MarshalJSON() ([]byte, error)
 }
 
 type Loader interface {
