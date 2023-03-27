@@ -12,17 +12,6 @@ import (
 
 type Type int
 
-const (
-	Sha256 = iota
-	Uri
-	Path
-)
-
-type Id struct {
-	Val    string
-	IdType Type
-}
-
 type Certificate struct {
 	X509Cert *x509.Certificate
 	link     string // self link to crt (if any)

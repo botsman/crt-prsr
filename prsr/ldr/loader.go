@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 )
 
 type CertificateLoader struct {
@@ -19,64 +18,6 @@ type CertificateLoader struct {
 
 func NewCertificateLoader() *CertificateLoader {
 	return &CertificateLoader{}
-}
-
-func (l *CertificateLoader) Load(trustedCertificates []crt.Id) map[string]struct{} {
-	trustedHashes := make(map[string]struct{})
-	hashesChan := make(chan string)
-	var wg sync.WaitGroup
-	var innerWg sync.WaitGroup
-	for _, cId := range trustedCertificates {
-		wg.Add(1)
-		go func(cId crt.Id, out chan<- string) {
-			defer wg.Done()
-			if cId.IdType == crt.Sha256 {
-				innerWg.Add(1)
-				out <- cId.Val
-				return
-			}
-			if cId.IdType == crt.Uri {
-				cert, err := l.LoadCertFromUri(cId.Val)
-				if err != nil {
-					log.Printf("Failed to load crt from uri %s: %s", cId.Val, err)
-					return
-				}
-				for _, c := range cert {
-					innerWg.Add(1)
-					out <- c.GetSha256()
-				}
-				return
-			}
-			if cId.IdType == crt.Path {
-				cert, err := l.LoadCertFromPath(cId.Val)
-				if err != nil {
-					log.Printf("Failed to load crt from path %s: %s", cId.Val, err)
-					return
-				}
-				for _, c := range cert {
-					innerWg.Add(1)
-					out <- c.GetSha256()
-				}
-				return
-			}
-		}(cId, hashesChan)
-	}
-	finish := make(chan struct{})
-	go func(in <-chan string, done <-chan struct{}) {
-		for {
-			select {
-			case <-done:
-				return
-			case hash := <-in:
-				innerWg.Done()
-				trustedHashes[hash] = struct{}{}
-			}
-		}
-	}(hashesChan, finish)
-	wg.Wait()
-	innerWg.Wait()
-	finish <- struct{}{}
-	return trustedHashes
 }
 
 func (l *CertificateLoader) LoadParentCertificate(c *crt.Certificate) (*crt.Certificate, error) {

@@ -2,25 +2,19 @@ package prsr
 
 import (
 	"encoding/json"
-	"github.com/botsman/crt-prsr/prsr/crt"
 	"github.com/botsman/crt-prsr/prsr/ldr"
 	"testing"
 )
 
 func TestNewCertificateParser(t *testing.T) {
-	parser := NewParser([]crt.Id{}, nil, nil)
+	parser := NewParser([]string{}, nil, nil)
 	if parser == nil {
 		t.Fatal("parser should not be nil")
 	}
 }
 
 func TestCertificateParser_IsTrusted(t *testing.T) {
-	certs := []crt.Id{
-		{
-			Val:    "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565",
-			IdType: crt.Sha256,
-		},
-	}
+	certs := []string{"de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565"}
 	loader := ldr.NewCertificateLoader()
 	parser := NewParser(certs, loader, nil)
 	crts, err := loader.LoadCertFromPath("testdata/qwac.crt")
@@ -38,12 +32,7 @@ func TestCertificateParser_IsTrusted(t *testing.T) {
 }
 
 func TestCertificateParser_IsTrustedRoot(t *testing.T) {
-	certs := []crt.Id{
-		{
-			Val:    "d42df70b62f315415ceb8791638a563966d69078c127204832b2f4fabeaf2830",
-			IdType: crt.Sha256,
-		},
-	}
+	certs := []string{"d42df70b62f315415ceb8791638a563966d69078c127204832b2f4fabeaf2830"}
 	loader := ldr.NewCertificateLoader()
 	parser := NewParser(certs, loader, nil)
 	crts, err := loader.LoadCertFromPath("testdata/qwac.crt")
@@ -61,12 +50,7 @@ func TestCertificateParser_IsTrustedRoot(t *testing.T) {
 }
 
 func TestCertificateParser_Parse(t *testing.T) {
-	certs := []crt.Id{
-		{
-			Val:    "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565",
-			IdType: crt.Sha256,
-		},
-	}
+	certs := []string{"de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565"}
 	loader := ldr.NewCertificateLoader()
 	parser := NewParser(certs, loader, nil)
 	crts, err := loader.LoadCertFromPath("testdata/qwac.crt")
@@ -82,12 +66,7 @@ func TestCertificateParser_Parse(t *testing.T) {
 }
 
 func TestCertificateParser_ParseAndValidate(t *testing.T) {
-	certs := []crt.Id{
-		{
-			Val:    "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565",
-			IdType: crt.Sha256,
-		},
-	}
+	certs := []string{"de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565"}
 	loader := ldr.NewCertificateLoader()
 	parser := NewParser(certs, loader, nil)
 	crts, err := loader.LoadCertFromPath("testdata/qwac.crt")
@@ -105,12 +84,7 @@ func TestCertificateParser_ParseAndValidate(t *testing.T) {
 }
 
 func TestCertificateParser_Json(t *testing.T) {
-	certs := []crt.Id{
-		{
-			Val:    "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565",
-			IdType: crt.Sha256,
-		},
-	}
+	certs := []string{"de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565"}
 	loader := ldr.NewCertificateLoader()
 	parser := NewParser(certs, loader, nil)
 	crts, err := loader.LoadCertFromPath("testdata/qwac.crt")
