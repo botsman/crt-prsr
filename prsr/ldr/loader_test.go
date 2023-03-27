@@ -1,7 +1,6 @@
 package ldr
 
 import (
-	"github.com/botsman/crt-prsr/prsr/crt"
 	"io"
 	"net/http"
 	"testing"
@@ -69,17 +68,6 @@ func TestNewCertificateLoader(t *testing.T) {
 	if loader == nil {
 		t.Fatal("loader should not be nil")
 	}
-}
-
-func TestCertificateLoader_Load(t *testing.T) {
-	certs := []crt.Id{
-		{
-			Val:    "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565",
-			IdType: crt.Sha256,
-		},
-	}
-	loader := NewCertificateLoader()
-	loader.Load(certs)
 }
 
 func Test_loadParentCertificate(t *testing.T) {

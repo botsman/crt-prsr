@@ -18,7 +18,6 @@ type PluginParseResult interface {
 }
 
 type Loader interface {
-	Load(trustedCertificates []crt.Id) map[string]struct{}
 	LoadCertFromBytes(content []byte, uri string) ([]*crt.Certificate, error)
 	LoadParentCertificate(crt *crt.Certificate) (*crt.Certificate, error)
 	LoadCRL(crt *crt.Certificate) (*crl.CRL, error)
@@ -106,14 +105,17 @@ type ParsedAndValidatedCertificate struct {
 	IsValid   bool `json:"is_valid"`
 }
 
-func NewParser(trustedCertificates []crt.Id, loader Loader, plugins map[string]Plugin) *Parser {
+func NewParser(trustedCertificateHashes []string, loader Loader, plugins map[string]Plugin) *Parser {
 	if loader == nil {
 		loader = ldr.NewCertificateLoader()
 	}
-	certsMap := loader.Load(trustedCertificates)
+	trustedCertificates := make(map[string]struct{}, 0)
+	for _, hash := range trustedCertificateHashes {
+		trustedCertificates[hash] = struct{}{}
+	}
 	return &Parser{
 		loader:              loader,
-		trustedCertificates: certsMap,
+		trustedCertificates: trustedCertificates,
 		plugins:             plugins,
 	}
 }
