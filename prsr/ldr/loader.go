@@ -1,6 +1,7 @@
 package ldr
 
 import (
+	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"github.com/botsman/crt-prsr/prsr/crl"
@@ -36,6 +37,16 @@ func (l *CertificateLoader) LoadParentCertificate(c *crt.Certificate) (*crt.Cert
 	return nil, nil
 }
 
+func (l *CertificateLoader) LoadRootPool(c *crt.Certificate) (*x509.CertPool, error) {
+	return x509.NewCertPool(), nil
+}
+
+func (l *CertificateLoader) LoadIntermediatePool(c *crt.Certificate) (*x509.CertPool, error) {
+	return x509.NewCertPool(), nil
+}
+
+// LoadRootCertificate loads the root certificate from the certificate chain
+// Root is considered to be the certificate that has no parent
 func (l *CertificateLoader) LoadRootCertificate(c *crt.Certificate) (*crt.Certificate, error) {
 	previous := c
 	var parent *crt.Certificate
