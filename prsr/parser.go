@@ -31,6 +31,12 @@ type Parser struct {
 	trustedCertificates map[string]struct{}
 }
 
+func (p *Parser) AddTrustedCertificates(certificateHashes ...string) {
+	for _, hash := range certificateHashes {
+		p.trustedCertificates[hash] = struct{}{}
+	}
+}
+
 func (p *Parser) LoadCertFromBytes(content []byte) ([]*crt.Certificate, error) {
 	return p.loader.LoadCertFromBytes(content, "")
 }
