@@ -20,8 +20,7 @@ type PluginParseResult interface {
 type Loader interface {
 	LoadCertFromBytes(content []byte, uri string) ([]*crt.Certificate, error)
 	LoadParentCertificate(crt *crt.Certificate) (*crt.Certificate, error)
-	LoadRootPool(crt *crt.Certificate) (*x509.CertPool, error)
-	LoadIntermediatePool(crt *crt.Certificate) (*x509.CertPool, error)
+	LoadChain(crt *crt.Certificate) (*x509.CertPool, *x509.CertPool, error)
 	LoadCRL(crt *crt.Certificate) (*crl.CRL, error)
 }
 
@@ -45,11 +44,7 @@ func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 	/**
 	Go through the certificate chain until we find a trusted certificate or reach the root.
 	*/
-	intermediates, err := p.loader.LoadIntermediatePool(c)
-	if err != nil {
-		return false, err
-	}
-	roots, err := p.loader.LoadRootPool(c)
+	roots, intermediates, err := p.loader.LoadChain(c)
 	if err != nil {
 		return false, err
 	}
