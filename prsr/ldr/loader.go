@@ -37,12 +37,8 @@ func (l *CertificateLoader) LoadParentCertificate(c *crt.Certificate) (*crt.Cert
 	return nil, nil
 }
 
-func (l *CertificateLoader) LoadRootPool(c *crt.Certificate) (*x509.CertPool, error) {
-	return x509.NewCertPool(), nil
-}
-
-func (l *CertificateLoader) LoadIntermediatePool(c *crt.Certificate) (*x509.CertPool, error) {
-	return x509.NewCertPool(), nil
+func (l *CertificateLoader) LoadChain(c *crt.Certificate) (*x509.CertPool, *x509.CertPool, error) {
+	return x509.NewCertPool(), x509.NewCertPool(), nil
 }
 
 // LoadRootCertificate loads the root certificate from the certificate chain
