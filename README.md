@@ -87,7 +87,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	parsed, err := parser.Parse(cert)
+	parsed, err := parser.ParseAndValidate(cert)
 	if err != nil {
 		panic(err)
 	}
@@ -96,45 +96,45 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(string(parsedJson))
-    // Output:
-    // {
-    //    "sha256": "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565",
-    //    "issuer": {
-    //        "country": "HU",
-    //        "organization": "Microsec Ltd.",
-    //        "organizational_unit": "",
-    //        "locality": "",
-    //        "province": "",
-    //        "street_address": "",
-    //        "postal_code": "",
-    //        "serial_number": "",
-    //        "common_name": "",
-    //        "unit": "e-Szigno CA"
-    //    },
-    //    "subject": {
-    //        "country": "FI",
-    //        "organization": "Certificate Verifier",
-    //        "organizational_unit": "",
-    //        "locality": "",
-    //        "province": "",
-    //        "street_address": "",
-    //        "postal_code": "",
-    //        "serial_number": "",
-    //        "common_name": "",
-    //        "unit": ""
-    //    },
-    //    "not_before": "2023-02-06T07:31:45Z",
-    //    "not_after": "2024-02-06T07:31:45Z",
-    //    "serial_number": 9852225575604409045021609199370,
-    //    "is_trusted": true,
-    //    "is_revoked": false,
-    //    "key_usage": "Unknown",
-    //    "parent_links": [
-    //        "http://teszt.e-szigno.hu/TCA3.crt"
-    //    ],
-    //    "crl_link": "http://teszt.e-szigno.hu/TCA3.crl",
-    //    "plugins": []
-    // }   
-}
+```
 
+Result:
+```json
+{
+  "sha256": "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565",
+  "issuer": {
+    "country": "HU",
+    "organization": "Microsec Ltd.",
+    "organizational_unit": "e-Szigno CA",
+    "locality": "Budapest",
+    "common_name": "e-Szigno Test CA3",
+    "unit": "e-Szigno CA"
+  },
+  "subject": {
+    "country": "FI",
+    "organization": "Certificate Verifier",
+    "locality": "Helsinki",
+    "serial_number": "1234567-8",
+    "common_name": "crt-prsr.com"
+  },
+  "not_before": "2023-02-06T07:31:45Z",
+  "not_after": "2024-02-06T07:31:45Z",
+  "serial_number": 9852225575604409045021609199370,
+  "key_usage": [
+    "DigitalSignature",
+    "KeyEncipherment"
+  ],
+  "ext_key_usage": [
+    "ServerAuth",
+    "ClientAuth"
+  ],
+  "parent_links": [
+    "http://teszt.e-szigno.hu/TCA3.crt"
+  ],
+  "crl_link": "http://teszt.e-szigno.hu/TCA3.crl",
+  "plugins": {},
+  "is_trusted": true,
+  "is_revoked": false,
+  "is_valid": true
+}
 ```
