@@ -20,13 +20,13 @@ func TestCertificateParser_AddTrustedCertificates(t *testing.T) {
 	}
 	certs := []string{"de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565"}
 	parser.AddTrustedCertificates(certs...)
-	if len(parser.trustedCertificates) != 1 {
-		t.Fatal("trustedCertificates should have 1 item")
+	if len(parser.TrustedCertificates) != 1 {
+		t.Fatal("TrustedCertificates should have 1 item")
 	}
 	moreCerts := []string{"d42df70b62f315415ceb8791638a563966d69078c127204832b2f4fabeaf2830"}
 	parser.AddTrustedCertificates(moreCerts...)
-	if len(parser.trustedCertificates) != 2 {
-		t.Fatal("trustedCertificates should have 2 items")
+	if len(parser.TrustedCertificates) != 2 {
+		t.Fatal("TrustedCertificates should have 2 items")
 	}
 }
 

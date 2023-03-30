@@ -25,32 +25,32 @@ type Loader interface {
 }
 
 type Parser struct {
-	loader              Loader
-	plugins             map[string]Plugin
-	trustedCertificates map[string]struct{}
+	Loader              Loader
+	Plugins             map[string]Plugin
+	TrustedCertificates map[string]struct{}
 }
 
 func (p *Parser) AddTrustedCertificates(certificateHashes ...string) {
 	for _, hash := range certificateHashes {
-		p.trustedCertificates[hash] = struct{}{}
+		p.TrustedCertificates[hash] = struct{}{}
 	}
 }
 
 func (p *Parser) LoadCertFromBytes(content []byte) ([]*crt.Certificate, error) {
-	return p.loader.LoadCertFromBytes(content, "")
+	return p.Loader.LoadCertFromBytes(content, "")
 }
 
 func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 	/**
 	Go through the certificate chain until we find a trusted certificate or reach the root.
 	*/
-	roots, intermediates, err := p.loader.LoadChain(c)
+	roots, intermediates, err := p.Loader.LoadChain(c)
 	if err != nil {
 		return false, err
 	}
 	parent := c
 	for {
-		_, isTrusted := p.trustedCertificates[parent.GetSha256()]
+		_, isTrusted := p.TrustedCertificates[parent.GetSha256()]
 		if isTrusted {
 			roots.AddCert(parent.X509Cert)
 			break
@@ -61,7 +61,7 @@ func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 		if parent.IsRoot() {
 			return false, nil
 		}
-		parent, err = p.loader.LoadParentCertificate(parent)
+		parent, err = p.Loader.LoadParentCertificate(parent)
 		if err != nil {
 			return false, err
 		}
@@ -72,7 +72,7 @@ func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 }
 
 func (p *Parser) IsRevoked(c *crt.Certificate) (bool, error) {
-	list, err := p.loader.LoadCRL(c)
+	list, err := p.Loader.LoadCRL(c)
 	if err != nil {
 		return false, err
 	}
@@ -122,9 +122,9 @@ func NewParser(trustedCertificateHashes []string, loader Loader, plugins map[str
 		trustedCertificates[hash] = struct{}{}
 	}
 	return &Parser{
-		loader:              loader,
-		trustedCertificates: trustedCertificates,
-		plugins:             plugins,
+		Loader:              loader,
+		TrustedCertificates: trustedCertificates,
+		Plugins:             plugins,
 	}
 }
 
@@ -166,12 +166,12 @@ func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 	}
 	plugins := make(map[string]PluginParseResult, 0)
 	pluginsResult := make(chan PluginResultPair)
-	for name, plugin := range p.plugins {
+	for name, plugin := range p.Plugins {
 		go func(out chan<- PluginResultPair, n string, p Plugin) {
 			out <- PluginResultPair{Name: n, Value: p.Parse(crt)}
 		}(pluginsResult, name, plugin)
 	}
-	for range p.plugins {
+	for range p.Plugins {
 		res := <-pluginsResult
 		plugins[res.Name] = res.Value
 	}
