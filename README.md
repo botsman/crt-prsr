@@ -96,6 +96,7 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(string(parsedJson))
+}
 ```
 
 Result:
