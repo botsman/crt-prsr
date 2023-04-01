@@ -1,9 +1,8 @@
 package crt
 
 import (
-	"encoding/pem"
-	"errors"
-	"fmt"
+	"io"
+	"net/http"
 	"testing"
 )
 
@@ -64,22 +63,12 @@ mOaW
 -----END CERTIFICATE-----
 `
 
-func LoadCertFromString(content string) (*Certificate, error) {
-	certDERBlock, _ := pem.Decode([]byte(content))
-	if certDERBlock == nil {
-		return nil, errors.New("invalid crt content")
-	}
-	if certDERBlock.Type != "CERTIFICATE" {
-		return nil, errors.New(fmt.Sprintf("Only public certificates supported. Got: %s", certDERBlock.Type))
-	}
-	return NewCertificate(certDERBlock.Bytes, "")
-}
-
 func TestCertificate_GetIssuer(t *testing.T) {
-	cert, err := LoadCertFromString(certString)
+	certs, err := LoadCertFromBytes([]byte(certString), "")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := certs[0]
 	issuer := cert.GetIssuer()
 	if issuer.String() != "CN=e-Szigno Test CA3,OU=e-Szigno CA,O=Microsec Ltd.,L=Budapest,C=HU" {
 		t.Fatalf("Unexpected issuer: %s", cert.GetIssuer())
@@ -96,10 +85,11 @@ func TestCertificate_GetIssuer(t *testing.T) {
 }
 
 func TestCertificate_GetParentLink(t *testing.T) {
-	cert, err := LoadCertFromString(certString)
+	certs, err := LoadCertFromBytes([]byte(certString), "")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := certs[0]
 	parentLinks := cert.GetParentLinks()
 	parentLink := parentLinks[0]
 	if parentLink != "http://teszt.e-szigno.hu/TCA3.crt" {
@@ -108,10 +98,11 @@ func TestCertificate_GetParentLink(t *testing.T) {
 }
 
 func TestCertificate_GetCrlLink(t *testing.T) {
-	cert, err := LoadCertFromString(certString)
+	certs, err := LoadCertFromBytes([]byte(certString), "")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := certs[0]
 	crlLink := cert.GetCrlLink()
 	if crlLink != "http://teszt.e-szigno.hu/TCA3.crl" {
 		t.Fatalf("Unexpected crl link: %s", crlLink)
@@ -119,12 +110,109 @@ func TestCertificate_GetCrlLink(t *testing.T) {
 }
 
 func TestCertificate_GetKeyUsage(t *testing.T) {
-	cert, err := LoadCertFromString(certString)
+	certs, err := LoadCertFromBytes([]byte(certString), "")
 	if err != nil {
 		t.Fatal(err)
 	}
+	cert := certs[0]
 	keyUsage := cert.GetKeyUsage()
 	if len(keyUsage) != 2 {
 		t.Fatalf("Unexpected key usage: %v", keyUsage)
+	}
+}
+
+func Test_loadParentCertificate(t *testing.T) {
+	cert, err := LoadCertFromPath("../testdata/qwac.crt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	parent, err := cert[0].LoadParentCertificate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parent == nil {
+		t.Fatal("parent should not be nil")
+	}
+	if parent.GetSha256() != "07f6606a521ad4e8d463c4e5656382e2baa110b9a753c27b5497bf9875d7c0e5" {
+		t.Fatalf("Unexpected sha256: %s", parent.GetSha256())
+	}
+}
+
+func Test_loadRootCertificate(t *testing.T) {
+	certs, err := LoadCertFromPath("../testdata/qwac.crt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := certs[0].LoadRootCertificate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if root == nil {
+		t.Fatal("root should not be nil")
+	}
+	if root.GetSha256() != "d42df70b62f315415ceb8791638a563966d69078c127204832b2f4fabeaf2830" {
+		t.Fatalf("Unexpected sha256: %s", root.GetSha256())
+	}
+}
+
+func TestLoadCertFromPath(t *testing.T) {
+	certs, err := LoadCertFromPath("../testdata/qwac.crt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cert := certs[0]
+	if cert.GetSha256() != "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565" {
+		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
+	}
+}
+
+func TestLoadCertFromUri(t *testing.T) {
+	certs, err := LoadCertFromUri("https://pki.goog/repo/certs/gts1c3.der")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cert := certs[0]
+	if cert.GetSha256() != "23ecb03eec17338c4e33a6b48a41dc3cda12281bbc3ff813c0589d6cc2387522" {
+		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
+	}
+}
+
+func TestLoadCertFromString(t *testing.T) {
+	certs, err := LoadCertFromBytes([]byte(certString), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cert := certs[0]
+	if cert.GetSha256() != "de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565" {
+		t.Fatalf("Unexpected sha256: %s", cert.GetSha256())
+	}
+}
+
+func TestLoadCertFromUriWithInvalidUri(t *testing.T) {
+	_, err := LoadCertFromUri("https://pki.goog/repo/certs/gts1c3.der/")
+	if err == nil {
+		t.Fatal("Expected error")
+	}
+}
+
+func TestLoadCert_p7cFormat(t *testing.T) {
+	const uri = "http://aia.entrust.net/esqseal1-g4.p7c"
+	content, err := http.Get(uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := io.ReadAll(content.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cert, err := LoadCertFromBytes(body, uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cert == nil {
+		t.Fatal("cert should not be nil")
+	}
+	if len(cert) != 2 {
+		t.Fatalf("Unexpected cert count: %d", len(cert))
 	}
 }

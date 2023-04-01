@@ -2,7 +2,7 @@ package plugin
 
 import (
 	"github.com/botsman/crt-prsr/prsr"
-	"github.com/botsman/crt-prsr/prsr/ldr"
+	"github.com/botsman/crt-prsr/prsr/crt"
 	"testing"
 )
 
@@ -10,9 +10,8 @@ func TestExamplePlugin(t *testing.T) {
 	plugins := map[string]prsr.Plugin{
 		"example": &ExamplePlugin{},
 	}
-	loader := ldr.NewCertificateLoader()
-	parser := prsr.NewParser([]string{}, loader, plugins)
-	crts, err := loader.LoadCertFromPath("../prsr/testdata/qwac.crt")
+	parser := prsr.NewParser([]string{}, plugins)
+	crts, err := crt.LoadCertFromPath("../prsr/testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
 	}

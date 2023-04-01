@@ -6,7 +6,15 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/hex"
+	"encoding/pem"
+	"errors"
+	"github.com/fullsailor/pkcs7"
+	"io"
+	"log"
 	"math/big"
+	"net/http"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -196,4 +204,141 @@ func (c *Certificate) Verify(intermediates *x509.CertPool, roots *x509.CertPool,
 	}
 	_, err := c.X509Cert.Verify(opts)
 	return err
+}
+
+func LoadCertFromBytes(content []byte, uri string) ([]*Certificate, error) {
+	const pemPrefix = "-----BEGIN CERTIFICATE-----"
+	if len(content) > len(pemPrefix) && string(content[:len(pemPrefix)]) == pemPrefix {
+		return LoadCertFromBytesPem(content, uri)
+	}
+	if content[0] == 0x30 && content[1] == 0x82 {
+		if strings.HasSuffix(uri, ".cer") || strings.HasSuffix(uri, ".der") || strings.HasSuffix(uri, ".crt") {
+			return LoadCertFromBytesDer(content, uri)
+		}
+		if strings.HasSuffix(uri, ".p7b") || strings.HasSuffix(uri, ".p7c") {
+			return LoadCertFromBytesPkcs7(content, uri)
+		}
+	}
+	return nil, errors.New("unknown certificate format")
+}
+
+func LoadCertFromUri(uri string) ([]*Certificate, error) {
+	response, err := http.Get(uri)
+	if err != nil {
+		return nil, err
+	}
+	content, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	return LoadCertFromBytes(content, uri)
+}
+
+func (c *Certificate) LoadParentCertificate() (*Certificate, error) {
+	for _, url := range c.GetParentLinks() {
+		certs, err := LoadCertFromUri(url)
+		// Here we should probably try each link until we find one that works
+		// Perhaps do that concurrently
+		if err != nil {
+			log.Printf("Failed to load crt from uri %s: %s", url, err)
+			continue
+		}
+		// Assume that there is only one certificate in the response
+		cert := certs[0]
+		return cert, nil
+	}
+	return nil, nil
+}
+
+func LoadCertFromBytesPem(content []byte, uri string) ([]*Certificate, error) {
+	rest := content
+	var certs []*Certificate
+	for len(rest) > 0 {
+		var block *pem.Block
+		block, rest = pem.Decode(rest)
+		if block == nil {
+			break
+		}
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+		cert, err := NewCertificate(block.Bytes, uri)
+		if err != nil {
+			return nil, err
+		}
+		certs = append(certs, cert)
+	}
+	return certs, nil
+}
+
+func LoadCertFromBytesDer(content []byte, uri string) ([]*Certificate, error) {
+	cert, err := NewCertificate(content, uri)
+	if err != nil {
+		return nil, err
+	}
+	return []*Certificate{cert}, nil
+}
+
+func LoadCertFromBytesPkcs7(content []byte, uri string) ([]*Certificate, error) {
+	parsed, err := pkcs7.Parse(content)
+	if err != nil {
+		return nil, err
+	}
+	var certs []*Certificate
+	for _, cert := range parsed.Certificates {
+		c, err := NewCertificate(cert.Raw, uri)
+		if err != nil {
+			return nil, err
+		}
+		certs = append(certs, c)
+	}
+	return certs, nil
+}
+
+func LoadCertFromPKCS7(content []byte, uri string) ([]*Certificate, error) {
+	parsed, err := pkcs7.Parse(content)
+	if err != nil {
+		return nil, err
+	}
+	if len(parsed.Certificates) == 0 {
+		return nil, errors.New("no certificates found")
+	}
+	certificates := make([]*Certificate, len(parsed.Certificates))
+	for i, cert := range parsed.Certificates {
+		certificates[i], err = NewCertificate(cert.Raw, uri)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return certificates, nil
+}
+
+func LoadCertFromPath(path string) ([]*Certificate, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return LoadCertFromBytes(content, "")
+}
+
+// LoadRootCertificate loads the root certificate from the certificate chain
+// Root is considered to be the certificate that has no parent
+func (c *Certificate) LoadRootCertificate() (*Certificate, error) {
+	previous := c
+	var parent *Certificate
+	var err error
+	for {
+		parent, err = previous.LoadParentCertificate()
+		if err != nil {
+			return nil, err
+		}
+		if parent == nil {
+			return previous, nil
+		}
+		if parent.IsRoot() {
+			return parent, nil
+		}
+		previous = parent
+	}
 }
