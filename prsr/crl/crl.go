@@ -3,7 +3,11 @@ package crl
 import (
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"github.com/botsman/crt-prsr/prsr/crt"
+	"io"
 	"math/big"
+	"net/http"
+	"os"
 )
 
 type CRL struct {
@@ -29,4 +33,40 @@ func (c *CRL) IsRevoked(serialNumber *big.Int) bool {
 		}
 	}
 	return false
+}
+
+func LoadCRLFromBytes(content []byte) (*CRL, error) {
+	return NewCRL(content)
+}
+
+func LoadCRLFromPath(path string) (*CRL, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	return LoadCRLFromBytes(content)
+}
+
+func LoadCRLFromUri(uri string) (*CRL, error) {
+	response, err := http.Get(uri)
+	if err != nil {
+		return nil, err
+	}
+	content, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	return NewCRL(content)
+}
+
+func LoadCRL(c *crt.Certificate) (*CRL, error) {
+	list, err := LoadCRLFromUri(c.GetCrlLink())
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
 }

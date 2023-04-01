@@ -5,7 +5,6 @@ import (
 	"crypto/x509/pkix"
 	"github.com/botsman/crt-prsr/prsr/crl"
 	"github.com/botsman/crt-prsr/prsr/crt"
-	"github.com/botsman/crt-prsr/prsr/ldr"
 	"math/big"
 	"time"
 )
@@ -17,15 +16,7 @@ type Plugin interface {
 type PluginParseResult interface {
 }
 
-type Loader interface {
-	LoadCertFromBytes(content []byte, uri string) ([]*crt.Certificate, error)
-	LoadParentCertificate(crt *crt.Certificate) (*crt.Certificate, error)
-	LoadChain(crt *crt.Certificate) (*x509.CertPool, *x509.CertPool, error)
-	LoadCRL(crt *crt.Certificate) (*crl.CRL, error)
-}
-
 type Parser struct {
-	Loader              Loader
 	Plugins             map[string]Plugin
 	TrustedCertificates map[string]struct{}
 }
@@ -37,14 +28,18 @@ func (p *Parser) AddTrustedCertificates(certificateHashes ...string) {
 }
 
 func (p *Parser) LoadCertFromBytes(content []byte) ([]*crt.Certificate, error) {
-	return p.Loader.LoadCertFromBytes(content, "")
+	return crt.LoadCertFromBytes(content, "")
+}
+
+func (p *Parser) LoadChain(c *crt.Certificate) (*x509.CertPool, *x509.CertPool, error) {
+	return x509.NewCertPool(), x509.NewCertPool(), nil
 }
 
 func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 	/**
 	Go through the certificate chain until we find a trusted certificate or reach the root.
 	*/
-	roots, intermediates, err := p.Loader.LoadChain(c)
+	roots, intermediates, err := p.LoadChain(c)
 	if err != nil {
 		return false, err
 	}
@@ -61,7 +56,7 @@ func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 		if parent.IsRoot() {
 			return false, nil
 		}
-		parent, err = p.Loader.LoadParentCertificate(parent)
+		parent, err = parent.LoadParentCertificate()
 		if err != nil {
 			return false, err
 		}
@@ -72,7 +67,7 @@ func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 }
 
 func (p *Parser) IsRevoked(c *crt.Certificate) (bool, error) {
-	list, err := p.Loader.LoadCRL(c)
+	list, err := crl.LoadCRL(c)
 	if err != nil {
 		return false, err
 	}
@@ -113,16 +108,12 @@ type ParsedAndValidatedCertificate struct {
 	IsValid   bool `json:"is_valid"`
 }
 
-func NewParser(trustedCertificateHashes []string, loader Loader, plugins map[string]Plugin) *Parser {
-	if loader == nil {
-		loader = ldr.NewCertificateLoader()
-	}
+func NewParser(trustedCertificateHashes []string, plugins map[string]Plugin) *Parser {
 	trustedCertificates := make(map[string]struct{}, 0)
 	for _, hash := range trustedCertificateHashes {
 		trustedCertificates[hash] = struct{}{}
 	}
 	return &Parser{
-		Loader:              loader,
 		TrustedCertificates: trustedCertificates,
 		Plugins:             plugins,
 	}
