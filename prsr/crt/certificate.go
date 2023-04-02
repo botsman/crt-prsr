@@ -138,13 +138,10 @@ func (c *Certificate) GetParentLinks() []string {
 	return c.X509Cert.IssuingCertificateURL
 }
 
-func (c *Certificate) GetCrlLink() string {
+func (c *Certificate) GetCrlLinks() []string {
 	// There is also an extension "Freshest CRL / Delta CRL Distribution Point".
 	// I think that we should parse it here as well
-	for _, url := range c.X509Cert.CRLDistributionPoints {
-		return url
-	}
-	return ""
+	return c.X509Cert.CRLDistributionPoints
 }
 
 func (c *Certificate) GetDeltaCRLLink() string {
@@ -293,24 +290,6 @@ func LoadCertFromBytesPkcs7(content []byte, uri string) ([]*Certificate, error) 
 		certs = append(certs, c)
 	}
 	return certs, nil
-}
-
-func LoadCertFromPKCS7(content []byte, uri string) ([]*Certificate, error) {
-	parsed, err := pkcs7.Parse(content)
-	if err != nil {
-		return nil, err
-	}
-	if len(parsed.Certificates) == 0 {
-		return nil, errors.New("no certificates found")
-	}
-	certificates := make([]*Certificate, len(parsed.Certificates))
-	for i, cert := range parsed.Certificates {
-		certificates[i], err = NewCertificate(cert.Raw, uri)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return certificates, nil
 }
 
 func LoadCertFromPath(path string) ([]*Certificate, error) {
