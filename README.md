@@ -6,10 +6,6 @@ This parser is intended to be used for parsing certificates in both PEM and DER 
 Parser itself provides only basic functionality for parsing certificates.  
 If you want to use it for some specific purpose, you need to implement your own plugin (see `/plugin`)
 
-## Loader 
-Existing Loader is implemented mostly for reference and testing purposes.
-In real world you probably want to preserve loaded data (certificates, CRLs) in some database/cache.
-
 ## Usage
 
 ```go
@@ -82,11 +78,12 @@ mOaW
 func main() {
 	// Initialize parser with a set of trusted certificates
 	certs := []string{"de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565"}
-	parser := prsr.NewParser(certs, nil, nil)
-	cert, err := prsr.LoadCertFromBytes([]byte(certString))
+	parser := prsr.NewParser(certs, nil)
+	crts, err := parser.LoadCertFromBytes([]byte(certString), "")
 	if err != nil {
 		panic(err)
 	}
+	cert := crts[0]
 	parsed, err := parser.ParseAndValidate(cert)
 	if err != nil {
 		panic(err)

@@ -27,8 +27,8 @@ func (p *Parser) AddTrustedCertificates(certificateHashes ...string) {
 	}
 }
 
-func (p *Parser) LoadCertFromBytes(content []byte) ([]*crt.Certificate, error) {
-	return crt.LoadCertFromBytes(content, "")
+func (p *Parser) LoadCertFromBytes(content []byte, uri string) ([]*crt.Certificate, error) {
+	return crt.LoadCertFromBytes(content, uri)
 }
 
 func (p *Parser) LoadChain(c *crt.Certificate) (*x509.CertPool, *x509.CertPool, error) {
