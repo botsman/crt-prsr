@@ -39,17 +39,15 @@ func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 	/**
 	Go through the certificate chain until we find a trusted certificate or reach the root.
 	*/
+	if _, isTrusted := p.TrustedCertificates[c.GetSha256()]; isTrusted {
+		return true, nil
+	}
 	roots, intermediates, err := p.LoadChain(c)
 	if err != nil {
 		return false, err
 	}
 	parent := c
 	for {
-		_, isTrusted := p.TrustedCertificates[parent.GetSha256()]
-		if isTrusted {
-			roots.AddCert(parent.X509Cert)
-			break
-		}
 		if parent.GetParentLinks() == nil {
 			return false, nil
 		}
@@ -59,6 +57,10 @@ func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 		parent, err = parent.LoadParentCertificate()
 		if err != nil {
 			return false, err
+		}
+		if _, isTrusted := p.TrustedCertificates[parent.GetSha256()]; isTrusted {
+			roots.AddCert(parent.X509Cert)
+			break
 		}
 		intermediates.AddCert(parent.X509Cert)
 	}
