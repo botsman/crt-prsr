@@ -99,7 +99,7 @@ type ParsedCertificate struct {
 	KeyUsage     []string                     `json:"key_usage"`
 	ExtKeyUsage  []string                     `json:"ext_key_usage"`
 	ParentLinks  []string                     `json:"parent_links"`
-	CrlLink      string                       `json:"crl_link"`
+	CrlLinks     []string                     `json:"crl_link"`
 	Plugins      map[string]PluginParseResult `json:"plugins"`
 }
 
@@ -178,7 +178,7 @@ func (p *Parser) Parse(crt *crt.Certificate) (ParsedCertificate, error) {
 		KeyUsage:     crt.GetKeyUsage(),
 		ExtKeyUsage:  crt.GetExtKeyUsage(),
 		ParentLinks:  crt.GetParentLinks(),
-		CrlLink:      crt.GetCrlLink(),
+		CrlLinks:     crt.GetCrlLinks(),
 		Plugins:      plugins,
 	}
 	return res, nil

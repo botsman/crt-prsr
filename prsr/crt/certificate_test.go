@@ -103,9 +103,9 @@ func TestCertificate_GetCrlLink(t *testing.T) {
 		t.Fatal(err)
 	}
 	cert := certs[0]
-	crlLink := cert.GetCrlLink()
-	if crlLink != "http://teszt.e-szigno.hu/TCA3.crl" {
-		t.Fatalf("Unexpected crl link: %s", crlLink)
+	crlLinks := cert.GetCrlLinks()
+	if crlLinks[0] != "http://teszt.e-szigno.hu/TCA3.crl" {
+		t.Fatalf("Unexpected crl link: %s", crlLinks[0])
 	}
 }
 

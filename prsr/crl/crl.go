@@ -27,8 +27,8 @@ func (c *CRL) GetRevokedCertificates() []pkix.RevokedCertificate {
 }
 
 func (c *CRL) IsRevoked(serialNumber *big.Int) bool {
-	for _, crt := range c.certificateList.RevokedCertificates {
-		if crt.SerialNumber.Cmp(serialNumber) == 0 {
+	for _, cert := range c.certificateList.RevokedCertificates {
+		if cert.SerialNumber.Cmp(serialNumber) == 0 {
 			return true
 		}
 	}
@@ -64,7 +64,7 @@ func LoadCRLFromUri(uri string) (*CRL, error) {
 }
 
 func LoadCRL(c *crt.Certificate) (*CRL, error) {
-	list, err := LoadCRLFromUri(c.GetCrlLink())
+	list, err := LoadCRLFromUri(c.GetCrlLinks()[0])
 	if err != nil {
 		return nil, err
 	}
