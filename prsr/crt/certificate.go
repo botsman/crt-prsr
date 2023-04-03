@@ -22,7 +22,7 @@ type Type int
 
 type Certificate struct {
 	X509Cert *x509.Certificate
-	link     string // self link to crt (if any)
+	Link     string // self Link to crt (if any)
 }
 
 func NewCertificate(content []byte, uri string) (*Certificate, error) {
@@ -183,7 +183,7 @@ func (c *Certificate) GetDeltaCRLLink() string {
 
 func (c *Certificate) IsRoot() bool {
 	for _, link := range c.GetParentLinks() {
-		if link == c.link {
+		if link == c.Link {
 			return true
 		}
 	}
@@ -234,7 +234,7 @@ func LoadCertFromUri(uri string) ([]*Certificate, error) {
 func (c *Certificate) LoadParentCertificate() (*Certificate, error) {
 	for _, url := range c.GetParentLinks() {
 		certs, err := LoadCertFromUri(url)
-		// Here we should probably try each link until we find one that works
+		// Here we should probably try each Link until we find one that works
 		// Perhaps do that concurrently
 		if err != nil {
 			log.Printf("Failed to load crt from uri %s: %s", url, err)

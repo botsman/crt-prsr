@@ -93,7 +93,7 @@ func TestCertificate_GetParentLink(t *testing.T) {
 	parentLinks := cert.GetParentLinks()
 	parentLink := parentLinks[0]
 	if parentLink != "http://teszt.e-szigno.hu/TCA3.crt" {
-		t.Fatalf("Unexpected parent link: %s", parentLink)
+		t.Fatalf("Unexpected parent Link: %s", parentLink)
 	}
 }
 
@@ -105,7 +105,7 @@ func TestCertificate_GetCrlLink(t *testing.T) {
 	cert := certs[0]
 	crlLinks := cert.GetCrlLinks()
 	if crlLinks[0] != "http://teszt.e-szigno.hu/TCA3.crl" {
-		t.Fatalf("Unexpected crl link: %s", crlLinks[0])
+		t.Fatalf("Unexpected crl Link: %s", crlLinks[0])
 	}
 }
 
