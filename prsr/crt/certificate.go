@@ -25,12 +25,16 @@ type Certificate struct {
 	Link     string // self Link to crt (if any)
 }
 
-func NewCertificate(content []byte, uri string) (*Certificate, error) {
-	x509Cert, err := x509.ParseCertificate(content)
+func NewCertificate(content []byte, uri string) ([]*Certificate, error) {
+	x509Certs, err := x509.ParseCertificates(content)
 	if err != nil {
 		return nil, err
 	}
-	return &Certificate{x509Cert, uri}, nil
+	certificates := make([]*Certificate, len(x509Certs))
+	for i, x509Cert := range x509Certs {
+		certificates[i] = &Certificate{x509Cert, uri}
+	}
+	return certificates, nil
 }
 
 func (c *Certificate) GetSha256() string {
@@ -263,17 +267,17 @@ func LoadCertFromBytesPem(content []byte, uri string) ([]*Certificate, error) {
 		if err != nil {
 			return nil, err
 		}
-		certs = append(certs, cert)
+		certs = append(certs, cert...)
 	}
 	return certs, nil
 }
 
 func LoadCertFromBytesDer(content []byte, uri string) ([]*Certificate, error) {
-	cert, err := NewCertificate(content, uri)
+	certs, err := NewCertificate(content, uri)
 	if err != nil {
 		return nil, err
 	}
-	return []*Certificate{cert}, nil
+	return certs, nil
 }
 
 func LoadCertFromBytesPkcs7(content []byte, uri string) ([]*Certificate, error) {
@@ -287,7 +291,7 @@ func LoadCertFromBytesPkcs7(content []byte, uri string) ([]*Certificate, error) 
 		if err != nil {
 			return nil, err
 		}
-		certs = append(certs, c)
+		certs = append(certs, c...)
 	}
 	return certs, nil
 }
