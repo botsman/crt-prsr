@@ -77,17 +77,16 @@ func (p *Parser) IsRevoked(c *crt.Certificate) (bool, error) {
 }
 
 type Organization struct {
-	Country            string                       `json:"country,omitempty"`
-	Organization       string                       `json:"organization,omitempty"`
-	OrganizationalUnit string                       `json:"organizational_unit,omitempty"`
-	Locality           string                       `json:"locality,omitempty"`
-	Province           string                       `json:"province,omitempty"`
-	StreetAddress      string                       `json:"street_address,omitempty"`
-	PostalCode         string                       `json:"postal_code,omitempty"`
-	SerialNumber       string                       `json:"serial_number,omitempty"`
-	CommonName         string                       `json:"common_name,omitempty"`
-	Unit               string                       `json:"unit,omitempty"`
-	Names              []pkix.AttributeTypeAndValue `json:"names,omitempty"`
+	Country            string `json:"country,omitempty"`
+	Organization       string `json:"organization,omitempty"`
+	OrganizationalUnit string `json:"organizational_unit,omitempty"`
+	Locality           string `json:"locality,omitempty"`
+	Province           string `json:"province,omitempty"`
+	StreetAddress      string `json:"street_address,omitempty"`
+	PostalCode         string `json:"postal_code,omitempty"`
+	SerialNumber       string `json:"serial_number,omitempty"`
+	CommonName         string `json:"common_name,omitempty"`
+	Unit               string `json:"unit,omitempty"`
 }
 
 type ParsedCertificate struct {
@@ -149,9 +148,6 @@ func (p *Parser) ParseOrganization(org pkix.Name) Organization {
 	organization.CommonName = org.CommonName
 	if len(org.OrganizationalUnit) != 0 {
 		organization.Unit = org.OrganizationalUnit[0]
-	}
-	if len(org.Names) != 0 {
-		organization.Names = org.Names
 	}
 	return organization
 }
