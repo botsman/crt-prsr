@@ -6,6 +6,7 @@ import (
 	"github.com/botsman/crt-prsr/prsr/crl"
 	"github.com/botsman/crt-prsr/prsr/crt"
 	"github.com/botsman/crt-prsr/prsr/ldr"
+	"github.com/botsman/crt-prsr/prsr/svr"
 	"github.com/botsman/crt-prsr/prsr/utils"
 	"log"
 	"math/big"
@@ -20,15 +21,9 @@ type PluginParseResult interface {
 }
 
 type Parser struct {
-	Plugins             map[string]Plugin
-	TrustedCertificates map[string]struct{}
-	Loader              Loader
-}
-
-func (p *Parser) AddTrustedCertificates(certificateHashes ...string) {
-	for _, hash := range certificateHashes {
-		p.TrustedCertificates[hash] = struct{}{}
-	}
+	Plugins map[string]Plugin
+	Loader  Loader
+	Saver   Saver
 }
 
 func (p *Parser) LoadCertFromBytes(content []byte, uri string) ([]*crt.Certificate, error) {
@@ -55,11 +50,7 @@ func (p *Parser) LoadParentCertificates(c *crt.Certificate) ([]*crt.Certificate,
 
 func (p *Parser) LoadRootChain(c *crt.Certificate) (*x509.CertPool, error) {
 	chain := x509.NewCertPool()
-	trustedHashes := make([]string, 0)
-	for hash := range p.TrustedCertificates {
-		trustedHashes = append(trustedHashes, hash)
-	}
-	certs, err := p.Loader.LoadCerts(trustedHashes, utils.Sha256)
+	certs, err := p.Loader.LoadRootCerts()
 	if err != nil {
 		return chain, err
 	}
@@ -69,9 +60,7 @@ func (p *Parser) LoadRootChain(c *crt.Certificate) (*x509.CertPool, error) {
 			return chain, err
 		}
 		for _, cert := range certs {
-			if _, ok := p.TrustedCertificates[cert.GetSha256()]; ok {
-				chain.AddCert(cert.X509Cert)
-			}
+			chain.AddCert(cert.X509Cert)
 		}
 	}
 	return chain, nil
@@ -91,64 +80,29 @@ func (p *Parser) GetChain(certificates [][]byte) (*x509.CertPool, error) {
 	return chain, nil
 }
 
-func (p *Parser) LoadChains(c *crt.Certificate) (*x509.CertPool, *x509.CertPool, error) {
-	roots, err := p.LoadRootChain(c)
-	if err != nil {
-		return nil, nil, err
-	}
-	intermediates := x509.NewCertPool()
-	parent := c
-	for {
-		if parent.GetParentLinks() == nil {
-			return intermediates, roots, nil
-		}
-		if parent.IsRoot() {
-			return intermediates, roots, nil
-		}
-		parentsContent, err := p.Loader.LoadCert(parent.GetParentLinks()[0], utils.Link)
-		var clr *ChainLoadedError
-		var ok bool
-		if err != nil {
-			clr, ok = err.(*ChainLoadedError)
-			if !ok {
-				return intermediates, roots, nil
-			}
-		}
-		parents, err := crt.LoadCertFromBytes(parentsContent, parent.GetParentLinks()[0])
-		if err != nil {
-			return intermediates, roots, nil
-		}
-		// If the error is a ChainLoadedError, it means that we already loaded the chain from the cache
-		if clr != nil {
-			log.Println("Loaded chain from cache")
-			for _, cert := range parents {
-				intermediates.AddCert(cert.X509Cert)
-			}
-			return intermediates, roots, nil
-		}
-		parent = parents[0]
-		if _, isTrusted := p.TrustedCertificates[parent.GetSha256()]; isTrusted {
-			// Trusted certificate should already be in the root chain
-			roots.AddCert(parent.X509Cert)
-			break
-		}
-		intermediates.AddCert(parent.X509Cert)
-	}
-	return intermediates, roots, nil
-}
-
 func (p *Parser) IsTrusted(c *crt.Certificate) (bool, error) {
 	/**
 	Go through the certificate chain until we find a trusted certificate or reach the root.
 	*/
-	if _, isTrusted := p.TrustedCertificates[c.GetSha256()]; isTrusted {
-		return true, nil
-	}
-	roots, intermediates, err := p.LoadChains(c)
+	roots, err := p.LoadRootChain(c)
+	intermediatesContent, cached, err := p.Loader.LoadIntermediateCerts(c)
 	if err != nil {
 		return false, err
 	}
+	intermediates := x509.NewCertPool()
+	for _, certBytes := range intermediatesContent {
+		certs, err := crt.LoadCertFromBytes(certBytes, "")
+		if err != nil {
+			return false, err
+		}
+		for _, cert := range certs {
+			intermediates.AddCert(cert.X509Cert)
+		}
+	}
 	err = c.Verify(intermediates, roots, nil)
+	if !cached {
+
+	}
 	return err == nil, err
 }
 
@@ -205,21 +159,25 @@ func (e *ChainLoadedError) Error() string {
 
 type Loader interface {
 	LoadCert(id string, idType utils.IdType) ([]byte, error)
-	LoadCerts(certs []string, idType utils.IdType) ([][]byte, error)
+	LoadIntermediateCerts(c *crt.Certificate) ([][]byte, bool, error)
+	LoadRootCerts() ([][]byte, error)
 }
 
-func NewParser(trustedCertificateHashes []string, plugins map[string]Plugin, loader Loader) *Parser {
-	trustedCertificates := make(map[string]struct{}, 0)
-	for _, hash := range trustedCertificateHashes {
-		trustedCertificates[hash] = struct{}{}
-	}
+type Saver interface {
+	SaveIntermediateCerts(c *crt.Certificate, certs [][]byte) error
+}
+
+func NewParser(plugins map[string]Plugin, loader Loader, saver Saver) *Parser {
 	if loader == nil {
 		loader = ldr.Loader{}
 	}
+	if saver == nil {
+		saver = svr.Saver{}
+	}
 	return &Parser{
-		TrustedCertificates: trustedCertificates,
-		Plugins:             plugins,
-		Loader:              loader,
+		Plugins: plugins,
+		Loader:  loader,
+		Saver:   saver,
 	}
 }
 
