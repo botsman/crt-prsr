@@ -7,14 +7,14 @@ import (
 )
 
 func TestNewCertificateParser(t *testing.T) {
-	parser := NewParser([]string{}, nil)
+	parser := NewParser([]string{}, nil, nil)
 	if parser == nil {
 		t.Fatal("parser should not be nil")
 	}
 }
 
 func TestCertificateParser_AddTrustedCertificates(t *testing.T) {
-	parser := NewParser([]string{}, nil)
+	parser := NewParser([]string{}, nil, nil)
 	if parser == nil {
 		t.Fatal("parser should not be nil")
 	}
@@ -32,7 +32,7 @@ func TestCertificateParser_AddTrustedCertificates(t *testing.T) {
 
 func TestCertificateParser_IsTrusted(t *testing.T) {
 	certs := []string{"de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565"}
-	parser := NewParser(certs, nil)
+	parser := NewParser(certs, nil, nil)
 	crts, err := crt.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
@@ -49,7 +49,7 @@ func TestCertificateParser_IsTrusted(t *testing.T) {
 
 func TestCertificateParser_IsTrustedRoot(t *testing.T) {
 	certs := []string{"d42df70b62f315415ceb8791638a563966d69078c127204832b2f4fabeaf2830"}
-	parser := NewParser(certs, nil)
+	parser := NewParser(certs, nil, nil)
 	crts, err := crt.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
@@ -66,7 +66,7 @@ func TestCertificateParser_IsTrustedRoot(t *testing.T) {
 
 func TestCertificateParser_Parse(t *testing.T) {
 	certs := []string{"de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565"}
-	parser := NewParser(certs, nil)
+	parser := NewParser(certs, nil, nil)
 	crts, err := crt.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
@@ -81,7 +81,7 @@ func TestCertificateParser_Parse(t *testing.T) {
 
 func TestCertificateParser_ParseAndValidate(t *testing.T) {
 	certs := []string{"de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565"}
-	parser := NewParser(certs, nil)
+	parser := NewParser(certs, nil, nil)
 	crts, err := crt.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
@@ -98,7 +98,7 @@ func TestCertificateParser_ParseAndValidate(t *testing.T) {
 
 func TestCertificateParser_Json(t *testing.T) {
 	certs := []string{"de8aa7c82edef27cb17b7a7b37a77b427f358100e0f5514429aa34162488d565"}
-	parser := NewParser(certs, nil)
+	parser := NewParser(certs, nil, nil)
 	crts, err := crt.LoadCertFromPath("testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)

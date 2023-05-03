@@ -8,11 +8,9 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
+	"github.com/botsman/crt-prsr/prsr/utils"
 	"github.com/fullsailor/pkcs7"
-	"io"
-	"log"
 	"math/big"
-	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -223,32 +221,12 @@ func LoadCertFromBytes(content []byte, uri string) ([]*Certificate, error) {
 	return nil, errors.New("unknown certificate format")
 }
 
-func LoadCertFromUri(uri string) ([]*Certificate, error) {
-	response, err := http.Get(uri)
-	if err != nil {
-		return nil, err
-	}
-	content, err := io.ReadAll(response.Body)
+func loadCertFromUri(uri string) ([]*Certificate, error) {
+	content, err := utils.LoadUri(uri)
 	if err != nil {
 		return nil, err
 	}
 	return LoadCertFromBytes(content, uri)
-}
-
-func (c *Certificate) LoadParentCertificate() (*Certificate, error) {
-	for _, url := range c.GetParentLinks() {
-		certs, err := LoadCertFromUri(url)
-		// Here we should probably try each Link until we find one that works
-		// Perhaps do that concurrently
-		if err != nil {
-			log.Printf("Failed to load crt from uri %s: %s", url, err)
-			continue
-		}
-		// Assume that there is only one certificate in the response
-		cert := certs[0]
-		return cert, nil
-	}
-	return nil, nil
 }
 
 func LoadCertFromBytesPem(content []byte, uri string) ([]*Certificate, error) {
@@ -303,25 +281,4 @@ func LoadCertFromPath(path string) ([]*Certificate, error) {
 	}
 
 	return LoadCertFromBytes(content, "")
-}
-
-// LoadRootCertificate loads the root certificate from the certificate chain
-// Root is considered to be the certificate that has no parent
-func (c *Certificate) LoadRootCertificate() (*Certificate, error) {
-	previous := c
-	var parent *Certificate
-	var err error
-	for {
-		parent, err = previous.LoadParentCertificate()
-		if err != nil {
-			return nil, err
-		}
-		if parent == nil {
-			return previous, nil
-		}
-		if parent.IsRoot() {
-			return parent, nil
-		}
-		previous = parent
-	}
 }
