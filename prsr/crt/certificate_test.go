@@ -121,40 +121,6 @@ func TestCertificate_GetKeyUsage(t *testing.T) {
 	}
 }
 
-func Test_loadParentCertificate(t *testing.T) {
-	cert, err := LoadCertFromPath("../testdata/qwac.crt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	parent, err := cert[0].LoadParentCertificate()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if parent == nil {
-		t.Fatal("parent should not be nil")
-	}
-	if parent.GetSha256() != "07f6606a521ad4e8d463c4e5656382e2baa110b9a753c27b5497bf9875d7c0e5" {
-		t.Fatalf("Unexpected sha256: %s", parent.GetSha256())
-	}
-}
-
-func Test_loadRootCertificate(t *testing.T) {
-	certs, err := LoadCertFromPath("../testdata/qwac.crt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	root, err := certs[0].LoadRootCertificate()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if root == nil {
-		t.Fatal("root should not be nil")
-	}
-	if root.GetSha256() != "d42df70b62f315415ceb8791638a563966d69078c127204832b2f4fabeaf2830" {
-		t.Fatalf("Unexpected sha256: %s", root.GetSha256())
-	}
-}
-
 func TestLoadCertFromPath(t *testing.T) {
 	certs, err := LoadCertFromPath("../testdata/qwac.crt")
 	if err != nil {
@@ -167,7 +133,7 @@ func TestLoadCertFromPath(t *testing.T) {
 }
 
 func TestLoadCertFromUri(t *testing.T) {
-	certs, err := LoadCertFromUri("https://pki.goog/repo/certs/gts1c3.der")
+	certs, err := loadCertFromUri("https://pki.goog/repo/certs/gts1c3.der")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +155,7 @@ func TestLoadCertFromString(t *testing.T) {
 }
 
 func TestLoadCertFromUriWithInvalidUri(t *testing.T) {
-	_, err := LoadCertFromUri("https://pki.goog/repo/certs/gts1c3.der/")
+	_, err := loadCertFromUri("https://pki.goog/repo/certs/gts1c3.der/")
 	if err == nil {
 		t.Fatal("Expected error")
 	}

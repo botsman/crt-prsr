@@ -10,7 +10,7 @@ func TestExamplePlugin(t *testing.T) {
 	plugins := map[string]prsr.Plugin{
 		"example": &ExamplePlugin{},
 	}
-	parser := prsr.NewParser([]string{}, plugins)
+	parser := prsr.NewParser([]string{}, plugins, nil)
 	crts, err := crt.LoadCertFromPath("../prsr/testdata/qwac.crt")
 	if err != nil {
 		t.Fatal(err)
